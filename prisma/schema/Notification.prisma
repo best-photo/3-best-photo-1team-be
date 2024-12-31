@@ -1,0 +1,13 @@
+model Notification {
+  id       Int    @id @default(autoincrement())
+  userId   Int
+  content  String @db.Text
+  isRead   Boolean @default(false)
+
+  user User @relation(fields: [userId], references: [id])
+
+  createdAt       DateTime         @default(now()) @db.Timestamptz(6)
+  updatedAt       DateTime         @updatedAt @db.Timestamptz(6)
+
+  @@map("notifications")
+}

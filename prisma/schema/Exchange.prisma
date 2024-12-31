@@ -1,0 +1,15 @@
+model Exchange {
+  id           Int  @id @default(autoincrement())
+  requesterId  Int
+  offeredCardId Int
+  targetCardId  Int
+
+  requester  User @relation(fields: [requesterId], references: [id])
+  offeredCard Card @relation("OfferedCard", fields: [offeredCardId], references: [id])
+  targetCard  Card @relation("TargetCard", fields: [targetCardId], references: [id])
+
+  createdAt       DateTime         @default(now()) @db.Timestamptz(6)
+  updatedAt       DateTime         @updatedAt @db.Timestamptz(6)
+
+  @@map("exchanges")
+}

@@ -1,0 +1,14 @@
+model Shop {
+  id       Int @id @default(autoincrement())
+  sellerId Int
+  cardId   Int    @unique
+  price    Int
+
+  seller User @relation(fields: [sellerId], references: [id])
+  card   Card @relation(fields: [cardId], references: [id])
+
+  createdAt       DateTime         @default(now()) @db.Timestamptz(6)
+  updatedAt       DateTime         @updatedAt @db.Timestamptz(6)
+
+  @@map("shops")
+}

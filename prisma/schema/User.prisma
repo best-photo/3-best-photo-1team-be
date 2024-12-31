@@ -1,0 +1,18 @@
+model User {
+  id          Int          @id @default(autoincrement())
+  nickName    String       @db.VarChar(50)
+  password    String       @db.VarChar(255)  /// 해시된 암호를 저장하기 위해 길이 증가
+  email       String?      @db.VarChar(100)
+  points      Int?
+
+  notifications Notification[]
+  purchases     Purchase[]
+  cards         Card[]
+  shops         Shop[]
+  exchanges     Exchange[]
+
+  createdAt       DateTime         @default(now()) @db.Timestamptz(6)
+  updatedAt       DateTime         @updatedAt @db.Timestamptz(6)
+
+  @@map("users")
+}

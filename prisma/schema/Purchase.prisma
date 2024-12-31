@@ -1,0 +1,13 @@
+model Purchase {
+  id       Int @id @default(autoincrement())
+  buyerId  Int
+  cardId   Int
+
+  user User @relation(fields: [buyerId], references: [id])
+  card Card @relation(fields: [cardId], references: [id])
+
+  createdAt       DateTime         @default(now()) @db.Timestamptz(6)
+  updatedAt       DateTime         @updatedAt @db.Timestamptz(6)
+
+  @@map("purchases")
+}

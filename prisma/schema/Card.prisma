@@ -1,0 +1,22 @@
+model Card {
+  id               Int      @id @default(autoincrement())
+  ownerId          Int
+  name             String   @db.VarChar(100)
+  price            Int
+  grade            String   @db.VarChar(20)
+  genre            String   @db.VarChar(20)
+  description      String?  @db.Text
+  totalQuantity    Int
+  remainingQuantity Int
+
+  owner      User       @relation(fields: [ownerId], references: [id])
+  purchases  Purchase[]
+  offeredExchanges Exchange[] @relation("OfferedCard")
+  targetExchanges  Exchange[] @relation("TargetCard")
+  shop       Shop?
+
+  createdAt       DateTime         @default(now()) @db.Timestamptz(6)
+  updatedAt       DateTime         @updatedAt @db.Timestamptz(6)
+
+  @@map("cards")
+}
