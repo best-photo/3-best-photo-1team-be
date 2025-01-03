@@ -1,9 +1,9 @@
 model User {
   id          Int          @id @default(autoincrement())
-  nickName    String       @db.VarChar(50)
+  nickname    String       @db.VarChar(50)
   password    String       @db.VarChar(255)  /// 해시된 암호를 저장하기 위해 길이 증가
-  email       String?      @db.VarChar(100)
-  points      Int?
+  email       String       @db.VarChar(255) @unique /// 이메일 중복 방지
+  points      Int?         @default(0) /// 가입 시 포인트는 0으로 설정
 
   notifications Notification[]
   purchases     Purchase[]
