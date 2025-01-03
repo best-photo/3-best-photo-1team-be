@@ -7,9 +7,13 @@ import { UsersModule } from './users/users.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { CardsModule } from './cards/cards.module';
 import { PointsModule } from './points/points.module';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
     AuthModule,
     ShopModule,
     CardsModule,
