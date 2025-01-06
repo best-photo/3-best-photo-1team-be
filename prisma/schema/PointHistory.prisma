@@ -1,0 +1,13 @@
+model PointHistory {
+  id        String    @id @default(cuid())
+  userId    String    /// 사용자 ID(User과 PointHistory는 1:N 관계)
+  points    Int       /// 포인트(획득 시 양수, 지불 시 음수)
+  pointType String    /// 포인트 변경 유형 (예: "draw", "exchange", "refund")
+
+  user      User      @relation(fields: [userId], references: [id])
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(6)
+
+  @@map("point_histories")
+}
