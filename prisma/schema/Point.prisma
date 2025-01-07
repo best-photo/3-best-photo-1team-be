@@ -1,12 +1,13 @@
 model Point {
   id        String    @id @default(cuid())
   userId    String    @unique /// User과 Point는 1:1 관계이므로 유일 속성을 갖도록 unique로 설정
-  balance   Int       @default(0)  /// 사용자의 포인트 잔액, 가입 시 0으로 설정
+  balance   Int       @default(0) @db.Integer /// 사용자의 포인트 잔액, 가입 시 0으로 설정
 
   user User @relation(fields: [userId], references: [id])
 
   createdAt DateTime  @default(now()) @db.Timestamptz(6)
   updatedAt DateTime  @updatedAt @db.Timestamptz(6)
+
 
   @@map("points")
 }

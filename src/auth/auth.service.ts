@@ -105,8 +105,6 @@ export class AuthService {
       throw new UnauthorizedException('사용자 정보를 찾을 수 없습니다.');
     }
 
-    console.log(user);
-
     // 비밀번호 검증(해시된 패스워드와 입력햔 패스워드를 비교)
     const isPasswordValid = await argon2.verify(user.password, dto.password);
 

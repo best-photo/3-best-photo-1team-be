@@ -18,14 +18,7 @@ export class AuthController {
     @Body() signupRequestDto: SignUpRequestDto,
   ): Promise<{ message: string }> {
     // 회원가입 서비스 호출
-    const result = await this.authService
-      .signup(signupRequestDto)
-      .catch((e) => {
-        // 에러 발생 시, 에러 메시지 전송
-        return { message: e.message };
-      });
-
-    // 응답 메시지 전송
+    const result = await this.authService.signup(signupRequestDto);
     return result;
   }
 
@@ -44,18 +37,17 @@ export class AuthController {
     // 쿠기 기반 인증 설정
     res.cookie('accessToken', header.accessToken, {
       httpOnly: true,
-      // secure: true,
-      sameSite: 'Lax',
+      secure: true,
+      sameSite: 'Strict',
     });
     res.cookie('refreshToken', header.refreshToken, {
       httpOnly: true,
-      // secure: true,
-      sameSite: 'Lax',
+      secure: true,
+      sameSite: 'Strict',
     });
 
     // 응답(Body) 전송
     return res.json(body);
-    // return res.json(result.body);
   }
 
   // 로그아웃
