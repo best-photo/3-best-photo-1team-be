@@ -1,4 +1,4 @@
-import { Controller, Post, Body } from '@nestjs/common';
+import { Controller, Post, Body, Res } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { SignInRequestDto, SignUpRequestDto } from './dto/auth.dto';
 import { ApiResponse, ApiTags } from '@nestjs/swagger';
@@ -35,16 +35,39 @@ export class AuthController {
     status: 200,
     description: '로그인 성공',
   })
-  async login(@Body() dto: SignInRequestDto) {
-    const result = await this.authService.signin(dto);
+  async login(@Body() signInRequestDto: SignInRequestDto, @Res() res) {
+    const { header, body } = await this.authService.signin(signInRequestDto);
 
-    // 헤더 설정
-    // Object.entries(result.headers).forEach(([key, value]) => {
-    //   res.headers[key] = value;
-    // });
+    // 헤더(Header) 설정(사용안함)
+    // res.setHeader('Authorization', `Bearer ${result.header.accessToken}`);
+    // res.setHeader('Refresh-Token', result.header.refreshToken);
+    // 쿠기 기반 인증 설정
+    res.cookie('accessToken', header.accessToken, {
+      httpOnly: true,
+      // secure: true,
+      sameSite: 'Lax',
+    });
+    res.cookie('refreshToken', header.refreshToken, {
+      httpOnly: true,
+      // secure: true,
+      sameSite: 'Lax',
+    });
 
-    // 응답 전송
-    return result.body;
+    // 응답(Body) 전송
+    return res.json(body);
+    // return res.json(result.body);
+  }
+
+  // 로그아웃
+  @Post('logout')
+  @ApiResponse({
+    status: 200,
+    description: '로그아웃 성공',
+  })
+  async logout(@Res() res) {
+    res.clearCookie('accessToken');
+    res.clearCookie('refreshToken');
+    return res.json({ message: '로그아웃 성공' });
   }
 
   // @Post('genPassword')

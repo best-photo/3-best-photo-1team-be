@@ -7,7 +7,12 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import * as argon2 from 'argon2';
 import { ConfigService } from '@nestjs/config';
-import { SignInRequestDto, SignUpRequestDto } from './dto/auth.dto';
+import {
+  SignInRequestDto,
+  SignUpRequestDto,
+  TokenRequestDto,
+  TokenResponseDto,
+} from './dto/auth.dto';
 
 @Injectable()
 export class AuthService {
@@ -111,16 +116,13 @@ export class AuthService {
     }
 
     // JWT 토큰 생성
-    // const [accessToken, refreshToken] = await this.generateToken(user.id);
-
-    // 응답 헤더 설정
-    // const headers = {
-    //   // Authorization: `Bearer ${tokens.accessToken}`,
-    //   // 'Refresh-Token': `Bearer ${tokens.refreshToken}`,
-    // };
+    const tokens = await this.generateTokens(user.id);
 
     return {
-      // headers,
+      header: {
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+      },
       body: {
         message: '로그인 성공',
         user: {
@@ -133,76 +135,49 @@ export class AuthService {
     };
   }
 
-  private async generateToken(
-    userId: string,
-  ): Promise<{ accessToken: string; refreshToken: string }> {
-    // accessToken: userId만 포함
-    const accessTokenPayload = {
-      sub: userId, // 사용자 식별자
-      type: 'access', // 토큰 타입
+  // JWT 토큰 생성
+  async generateTokens(userId: string): Promise<TokenResponseDto> {
+    try {
+      // accessToken, refreshToken 생성
+      const [accessToken, refreshToken] = await Promise.all([
+        this.generateAccessToken(userId),
+        this.generateRefreshToken(userId),
+      ]);
+
+      return { accessToken, refreshToken };
+    } catch (error) {
+      throw new UnauthorizedException(
+        '토큰 생성에 실패했습니다.',
+        error.message,
+      );
+    }
+  }
+
+  // accessToken 생성
+  private async generateAccessToken(userId: string): Promise<string> {
+    const payload: TokenRequestDto = {
+      sub: userId,
+      type: 'access',
     };
 
-    // refreshToken: 동일하게 최소한의 정보만
-    const refreshTokenPayload = {
-      sub: userId, // 사용자 식별자
-      type: 'refresh', // 토큰 타입
+    return this.jwtService.signAsync(payload, {
+      secret: this.configService.getOrThrow<string>('JWT_SECRET'),
+      expiresIn: this.configService.getOrThrow<string>('JWT_EXPIRES_IN'),
+    });
+  }
+
+  // refreshToken 생성
+  private async generateRefreshToken(userId: string): Promise<string> {
+    const payload: TokenRequestDto = {
+      sub: userId,
+      type: 'refresh',
     };
 
-    const [accessToken, refreshToken] = await Promise.all([
-      this.jwtService.signAsync(accessTokenPayload, {
-        secret: process.env.JWT_SECRET,
-        expiresIn: process.env.JWT_EXPIRES_IN,
-      }),
-      this.jwtService.signAsync(refreshTokenPayload, {
-        secret: process.env.JWT_REFRESH_SECRET,
-        expiresIn: process.env.JWT_REFRESH_EXPIRES_IN,
-      }),
-    ]).catch((e) => {
-      throw new UnauthorizedException(`토큰 생성에 실패했습니다.`, e.message);
+    return this.jwtService.signAsync(payload, {
+      secret: this.configService.getOrThrow<string>('JWT_REFRESH_SECRET'),
+      expiresIn: this.configService.getOrThrow<string>(
+        'JWT_REFRESH_EXPIRES_IN',
+      ),
     });
-
-    return { accessToken, refreshToken };
   }
-
-  getCookieWithJwtAccessToken(userId: string, nickname: string) {
-    const payload = { sub: userId, nickname };
-
-    const accessToken = this.jwtService.sign(payload, {
-      secret: process.env.JWT_SECRET,
-      expiresIn: process.env.JWT_EXPIRES_IN,
-    });
-
-    return `Authentication=${accessToken}; HttpOnly; Path=/; Max-Age=${process.env.JWT_EXPIRES_IN}`;
-  }
-
-  getCookieWithJwtRefreshToken(userId: string, nickname: string) {
-    const payload = { sub: userId, nickname };
-
-    const refreshToken = this.jwtService.sign(payload, {
-      secret: process.env.JWT_REFRESH_SECRET,
-      expiresIn: process.env.JWT_REFRESH_EXPIRES_IN,
-    });
-
-    return `Refresh=${refreshToken}; HttpOnly; Path=/; Max-Age=${process.env.JWT_REFRESH_EXPIRES_IN}`;
-  }
-
-  // create(createAuthDto: CreateAuthDto) {
-  //   return 'This action adds a new auth';
-  // }
-
-  // findAll() {
-  //   return `This action returns all auth`;
-  // }
-
-  // findOne(id: number) {
-  //   return `This action returns a #${id} auth`;
-  // }
-
-  // update(id: number, updateAuthDto: UpdateAuthDto) {
-  //   return `This action updates a #${id} auth`;
-  // }
-
-  // remove(id: number) {
-  //   return `This action removes a #${id} auth`;
-  // }
 }
