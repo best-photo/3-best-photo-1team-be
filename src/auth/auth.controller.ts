@@ -1,17 +1,7 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Patch,
-  Param,
-  Delete,
-} from '@nestjs/common';
+import { Controller, Post, Body } from '@nestjs/common';
 import { AuthService } from './auth.service';
-// import { CreateAuthDto } from './dto/create-auth.dto';
-// import { UpdateAuthDto } from './dto/update-auth.dto';
-import { SignUpDto, SignInDto, PassDto } from './dto/auth.dto';
-import { ApiTags } from '@nestjs/swagger';
+import { SignInRequestDto, SignUpRequestDto } from './dto/auth.dto';
+import { ApiResponse, ApiTags } from '@nestjs/swagger';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -20,20 +10,47 @@ export class AuthController {
 
   // 회원가입
   @Post('signup')
-  async signup(@Body() dto: SignUpDto) {
-    return this.authService.signup(dto);
+  @ApiResponse({
+    status: 201,
+    description: '회원가입이 완료되었습니다.',
+  })
+  async signup(
+    @Body() signupRequestDto: SignUpRequestDto,
+  ): Promise<{ message: string }> {
+    // 회원가입 서비스 호출
+    const result = await this.authService
+      .signup(signupRequestDto)
+      .catch((e) => {
+        // 에러 발생 시, 에러 메시지 전송
+        return { message: e.message };
+      });
+
+    // 응답 메시지 전송
+    return result;
   }
 
   // 로그인
   @Post('login')
-  async login(@Body() dto: SignInDto) {
-    return this.authService.signin(dto);
+  @ApiResponse({
+    status: 200,
+    description: '로그인 성공',
+  })
+  async login(@Body() dto: SignInRequestDto) {
+    const result = await this.authService.signin(dto);
+
+    // 헤더 설정
+    // Object.entries(result.headers).forEach(([key, value]) => {
+    //   res.headers[key] = value;
+    // });
+
+    // 응답 전송
+    return result.body;
   }
 
-  @Post('genPassword')
-  async genPassword(@Body() dto: PassDto) {
-    return this.authService.generatePasswordHash(dto);
-  }
+  // @Post('genPassword')
+  // async genPassword(@Body() dto: PassDto) {
+  //   return this.authService.generatePasswordHash(dto);
+  // }
 
   // @Post()
   // create(@Body() createAuthDto: CreateAuthDto) {

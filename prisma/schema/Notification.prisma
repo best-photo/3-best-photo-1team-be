@@ -1,10 +1,10 @@
 model Notification {
-  id       Int    @id @default(autoincrement())
-  userId   Int
-  content  String @db.Text
-  isRead   Boolean @default(false)
+  id       String   @id @default(cuid())
+  userId   String   /// 알림을 받을 사용자 ID(User과 Notification은 1:N 관계)
+  content  String   @db.Text /// 알림 내용
+  isRead   Boolean  @default(false) /// 읽음 여부
 
-  user User @relation(fields: [userId], references: [id])
+  user     User     @relation(fields: [userId], references: [id])
 
   createdAt       DateTime         @default(now()) @db.Timestamptz(6)
   updatedAt       DateTime         @updatedAt @db.Timestamptz(6)

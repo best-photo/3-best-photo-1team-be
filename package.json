@@ -33,6 +33,7 @@
     "@nestjs/mapped-types": "*",
     "@nestjs/platform-express": "^10.4.15",
     "@nestjs/swagger": "^8.1.0",
+    "@paralleldrive/cuid2": "^2.2.2",
     "@prisma/client": "^6.1.0",
     "argon2": "^0.41.1",
     "class-transformer": "^0.5.1",
