@@ -13,6 +13,7 @@ import {
   TokenRequestDto,
   TokenResponseDto,
 } from './dto/auth.dto';
+import { PointType } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
@@ -77,7 +78,7 @@ export class AuthService {
           },
         },
         points: point.balance || 0,
-        pointType: 'join',
+        pointType: PointType.JOIN,
       },
     });
 
