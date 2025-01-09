@@ -2,6 +2,7 @@ import {
   Injectable,
   UnauthorizedException,
   ConflictException,
+  Res,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
@@ -183,10 +184,10 @@ export class AuthService {
   }
 
   // 로그아웃
-  async logout() {
-    return {
-      message: '로그아웃 성공',
-    };
+  async logout(@Res() res) {
+    res.clearCookie('accessToken');
+    res.clearCookie('refreshToken');
+    return res.json({ message: '로그아웃 성공' });
   }
 
   // 토큰 갱신

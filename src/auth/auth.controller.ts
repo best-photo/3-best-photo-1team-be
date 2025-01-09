@@ -56,9 +56,7 @@ export class AuthController {
     description: '로그아웃 성공',
   })
   async logout(@Res() res) {
-    res.clearCookie('accessToken');
-    res.clearCookie('refreshToken');
-    return res.json({ message: '로그아웃 성공' });
+    return await this.authService.logout(res);
   }
 
   // 토큰 갱신
