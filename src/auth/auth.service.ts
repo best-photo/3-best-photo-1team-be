@@ -31,7 +31,7 @@ export class AuthService {
     });
 
     // 이메일이 이미 존재하면 예외 발생
-    if (!!emailExists) {
+    if (emailExists) {
       throw new ConflictException('이미 사용 중인 이메일입니다.');
     }
 
@@ -68,9 +68,9 @@ export class AuthService {
           },
         });
 
-        if (!point) {
-          throw new ConflictException('포인트 생성에 실패했습니다.');
-        }
+        // if (!point) {
+        //   throw new ConflictException('포인트 생성에 실패했습니다.');
+        // }
 
         // 포인트 히스토리 테이블에 가입 포인트 이력 추가
         await tx.pointHistory.create({
@@ -108,16 +108,9 @@ export class AuthService {
       },
     });
 
-    // users 테이블에 사용자 정보(이메일)가 없으면 예외 발생
-    if (!user) {
-      throw new UnauthorizedException('사용자 정보를 찾을 수 없습니다.');
-    }
-
-    // 비밀번호 검증(해시된 패스워드와 입력햔 패스워드를 비교)
-    const isPasswordValid = await argon2.verify(user.password, dto.password);
-
-    // 비밀번호가 일치하지 않으면 예외 발생
-    if (!isPasswordValid) {
+    // 타이밍 공격 방지를 위해 users 테이블에 사용자 정보(이메일)가 없거나
+    // 비밀번호 검증(해시된 패스워드와 입력햔 패스워드를 비교)에 실패하면 예외 발생
+    if (!user || !(await argon2.verify(user.password, dto.password))) {
       throw new UnauthorizedException('회원정보가 일치하지 않습니다.');
     }
 
