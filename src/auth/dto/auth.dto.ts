@@ -1,38 +1,37 @@
-import { IsEmail, IsNotEmpty, IsString, Length } from 'class-validator';
+import { OmitType } from '@nestjs/swagger';
+import { UserDto } from 'src/users/dto/user.dto';
 
-export class SignUpDto {
-  @IsEmail()
-  @IsNotEmpty()
-  email: string;
+// 회원가입 요청 DTO
+export class SignUpRequestDto extends OmitType(UserDto, ['id']) {}
 
-  @IsString()
-  @IsNotEmpty()
-  @Length(8, 128) /// 최소 8자, 최대 128자로 수정
-  password: string;
+// 회원가입 응답 DTO
+export class SignupResponseDto extends OmitType(UserDto, ['password']) {}
 
-  @IsString()
-  @IsNotEmpty()
-  @Length(2, 50)
-  nickname: string;
+// 로그인 요청 DTO (필요한 Email, Password만 받음)
+export class SignInRequestDto extends OmitType(UserDto, [
+  'id',
+  'nickname',
+  'refreshToken',
+]) {}
+
+// 로그인 응답 DTO
+export class SigninResponseDto extends SignupResponseDto {}
+
+// 토큰 생성 요청 DTO
+export class TokenRequestDto {
+  sub: string;
+  type: 'access' | 'refresh';
 }
 
-export class SignInDto {
-  @IsEmail()
-  @IsNotEmpty()
-  email: string;
-
-  @IsString()
-  @IsNotEmpty()
-  password: string;
+// 토큰 생성 응답 DTO
+// 로그인 시에는 accessToken, refreshToken을 반환
+// 로그아웃 시에는 둘 다 null로 반환
+export class TokenResponseDto {
+  accessToken: string | null;
+  refreshToken: string | null;
 }
 
-export class TokenDto {
-  accessToken: string;
-  refreshToken: string;
-}
-
-export class PassDto {
-  @IsString()
-  @IsNotEmpty()
-  password: string;
+export class TokenOptionsDto {
+  secret: string;
+  expiresIn: string;
 }

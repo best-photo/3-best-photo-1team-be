@@ -1,13 +1,31 @@
+/// 카드등급
+enum CardGrade {
+  COMMON      @map("common") /// 일반
+  RARE        @map("rare")  /// 희귀
+  SUPER_RARE  @map("super_rare")  /// 초희귀
+  LEGENDARY   @map("legendary") /// 전설
+}
+
+/// 카드장르
+enum CardGenre {
+  TRAVEL    @map("travel")     /// 여행
+  LANDSCAPE @map("landscape")  /// 풍경
+  PORTRAIT  @map("portrait")   /// 인물
+  OBJECT    @map("object")     /// 사물
+}
+
 model Card {
-  id               Int      @id @default(autoincrement())
-  ownerId          Int
-  name             String   @db.VarChar(100)
-  price            Int
-  grade            String   @db.VarChar(20)
-  genre            String   @db.VarChar(20)
-  description      String?  @db.Text
-  totalQuantity    Int
-  remainingQuantity Int
+  id               String   @id @default(cuid())
+  ownerId          String   /// 카드 소유자(User과 Card는 1:N 관계)
+  name             String   @db.VarChar(100) /// 카드 이름 길이 제한(100자)
+  price            Int      /// 카드에 부여되어 있는 포인트 가격
+
+
+  grade            CardGrade  /// 카드 등급(common, rare, super rare, legendary)
+  genre            CardGenre  /// 카드 장르(예: 여행, 풍경, 인물, 사물 등)
+  description      String?  @db.Text  /// 카드 설명(없을 수도 있음)
+  totalQuantity     Int     /// 카드의 총 수량
+  remainingQuantity Int     /// 카드의 남은 수량
 
   owner      User       @relation(fields: [ownerId], references: [id])
   purchases  Purchase[]

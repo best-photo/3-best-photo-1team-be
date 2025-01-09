@@ -1,6 +1,8 @@
-import { ApiProperty, OmitType } from '@nestjs/swagger';
+import { ApiProperty } from '@nestjs/swagger';
+import { createId } from '@paralleldrive/cuid2';
 import {
   IsEmail,
+  IsJWT,
   IsNotEmpty,
   IsString,
   Length,
@@ -14,10 +16,11 @@ export class UserDto {
   @ApiProperty({
     nullable: false,
     description: '사용자 ID (CUID 자동 생성)',
-    example: '',
+    example: createId(),
     type: String,
   })
-  id: number;
+  // 사용자 ID는 CUID로 자동 생성되므로, 사용자가 직접 입력할 필요가 없음
+  id: string;
 
   @ApiProperty({
     nullable: false,
@@ -42,9 +45,12 @@ export class UserDto {
   @IsString({ message: '비밀번호는 문자열이어야 합니다.' })
   @MinLength(8, { message: '비밀번호는 최소 8자 이상이어야 합니다.' })
   @MaxLength(128, { message: '비밀번호는 최대 128자 이하여야 합니다.' })
-  @Matches(/^(?=.*[A-Za-z])(?=.*\d)(?=.*[!@#$%^&*])/, {
-    message: '비밀번호는 영문, 숫자, 특수문자를 포함해야 합니다.',
-  })
+  @Matches(
+    /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/,
+    {
+      message: '비밀번호는 영문, 숫자, 특수문자를 포함해야 합니다.',
+    },
+  )
   // 비밀번호 제약조건: 최소 8자, 최대 128자, 영문, 숫자, 특수문자 포함 문자열
   // 이 값은 argon2로 해싱되기 전의 패스워드 값이므로 데이터베이스에 저장 시 반드시 해싱을 해야 함
   password: string;
@@ -60,16 +66,16 @@ export class UserDto {
   @Length(2, 50)
   // 닉네임 제약조건: 최소 2자, 최대 50자 문자열
   nickname: string;
+
+  @ApiProperty({
+    nullable: true,
+    description: 'JWT 리프레시 토큰',
+    example: '생략',
+    type: String,
+  })
+  @IsJWT({ message: '올바른 JWT 토큰 형식이어야 합니다.' })
+  @Length(1, 1024, {
+    message: 'JWT 토큰은 최대 1024자까지 입력할 수 있습니다.',
+  })
+  refreshToken?: string;
 }
-
-// 회원가입 요청 DTO
-export class SignUpRequestDto extends UserDto {}
-
-// 회원가입 응답 DTO
-export class SignupResponseDto extends OmitType(UserDto, ['password']) {}
-
-// 로그인 요청 DTO (필요한 Email, Password만 받음)
-export class SignInRequestDto extends OmitType(UserDto, ['nickname']) {}
-
-// 로그인 응답 DTO
-export class SigninResponseDto extends SignupResponseDto {}

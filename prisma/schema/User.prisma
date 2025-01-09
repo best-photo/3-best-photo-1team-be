@@ -1,15 +1,17 @@
 model User {
-  id          Int          @id @default(autoincrement())
-  nickname    String       @db.VarChar(50)
-  password    String       @db.VarChar(255)  /// 해시된 암호를 저장하기 위해 길이 증가
+  id          String       @id @default(cuid())
   email       String       @db.VarChar(255) @unique /// 이메일 중복 방지
-  points      Int?         @default(0) /// 가입 시 포인트는 0으로 설정
+  password    String       @db.VarChar(255)  /// 해시된 암호 저장 (최소 8자 이상)
+  nickname    String       @db.VarChar(50)  /// 닉네임 길이 제한(2~50자)
+  refreshToken String?     @db.Text  /// JWT 리프레시 토큰
 
-  notifications Notification[]
-  purchases     Purchase[]
-  cards         Card[]
-  shops         Shop[]
-  exchanges     Exchange[]
+  point          Point? /// 사용자의 포인트(유저와 포인트 모델은 1:1 관계)
+  pointHistories PointHistory[] /// 사용자의 포인트 이력(유저와 포인트 이력은 1:N 관계)
+  notifications Notification[]  /// 사용자의 알림(유저와 알림은 1:N 관계)
+  purchases     Purchase[]  /// 사용자의 구매 이력(유저와 구매는 1:N 관계)
+  cards         Card[]  /// 사용자의 카드(유저와 카드는 1:N 관계)
+  shops         Shop[]  /// 사용자의 상점(유저와 상점은 1:N 관계)
+  exchanges     Exchange[] /// 사용자의 교환 이력(유저와 교환은 1:N 관계)
 
   createdAt       DateTime         @default(now()) @db.Timestamptz(6)
   updatedAt       DateTime         @updatedAt @db.Timestamptz(6)
