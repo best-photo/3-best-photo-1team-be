@@ -8,7 +8,11 @@ export class SignUpRequestDto extends OmitType(UserDto, ['id']) {}
 export class SignupResponseDto extends OmitType(UserDto, ['password']) {}
 
 // 로그인 요청 DTO (필요한 Email, Password만 받음)
-export class SignInRequestDto extends OmitType(UserDto, ['id', 'nickname']) {}
+export class SignInRequestDto extends OmitType(UserDto, [
+  'id',
+  'nickname',
+  'refreshToken',
+]) {}
 
 // 로그인 응답 DTO
 export class SigninResponseDto extends SignupResponseDto {}

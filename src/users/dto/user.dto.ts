@@ -2,6 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { createId } from '@paralleldrive/cuid2';
 import {
   IsEmail,
+  IsJWT,
   IsNotEmpty,
   IsString,
   Length,
@@ -65,4 +66,16 @@ export class UserDto {
   @Length(2, 50)
   // 닉네임 제약조건: 최소 2자, 최대 50자 문자열
   nickname: string;
+
+  @ApiProperty({
+    nullable: true,
+    description: 'JWT 리프레시 토큰',
+    example: '생략',
+    type: String,
+  })
+  @IsJWT({ message: '올바른 JWT 토큰 형식이어야 합니다.' })
+  @Length(1, 1024, {
+    message: 'JWT 토큰은 최대 1024자까지 입력할 수 있습니다.',
+  })
+  refreshToken?: string;
 }

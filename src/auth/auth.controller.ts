@@ -48,15 +48,15 @@ export class AuthController {
   }
 
   // 로그아웃
-  // 로그아웃
   @UseGuards(AuthGuard)
   @Post('logout')
   @ApiResponse({
     status: 200,
     description: '로그아웃 성공',
   })
-  async logout(@Res() res) {
-    return await this.authService.logout(res);
+  async logout(@Req() req, @Res() res) {
+    const invalidateToken = req.cookies['refreshToken'];
+    return await this.authService.logout(invalidateToken, res);
   }
 
   // 토큰 갱신
