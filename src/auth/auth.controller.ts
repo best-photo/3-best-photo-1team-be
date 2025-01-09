@@ -1,7 +1,16 @@
-import { Controller, Post, Body, Res } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Res,
+  Req,
+  UseGuards,
+  Get,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { SignInRequestDto, SignUpRequestDto } from './dto/auth.dto';
 import { ApiResponse, ApiTags } from '@nestjs/swagger';
+import { AuthGuard } from './auth.guard';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -31,26 +40,15 @@ export class AuthController {
   async login(@Body() signInRequestDto: SignInRequestDto, @Res() res) {
     const { header, body } = await this.authService.signin(signInRequestDto);
 
-    // 헤더(Header) 설정(사용안함)
-    // res.setHeader('Authorization', `Bearer ${result.header.accessToken}`);
-    // res.setHeader('Refresh-Token', result.header.refreshToken);
     // 쿠기 기반 인증 설정
-    res.cookie('accessToken', header.accessToken, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'Strict',
-    });
-    res.cookie('refreshToken', header.refreshToken, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'Strict',
-    });
+    await this.setAuthCookies(res, header);
 
     // 응답(Body) 전송
     return res.json(body);
   }
 
   // 로그아웃
+  @UseGuards(AuthGuard)
   @Post('logout')
   @ApiResponse({
     status: 200,
@@ -60,6 +58,44 @@ export class AuthController {
     res.clearCookie('accessToken');
     res.clearCookie('refreshToken');
     return res.json({ message: '로그아웃 성공' });
+  }
+
+  // 토큰 갱신
+  @Post('refresh')
+  @ApiResponse({
+    status: 200,
+    description: '토큰 갱신 성공',
+  })
+  @ApiResponse({
+    status: 401,
+    description: '토큰 갱신 실패',
+  })
+  async refresh(@Req() req, @Res() res) {
+    const refreshToken = req.cookies['refreshToken'];
+    console.log(refreshToken);
+    const { header, body } = await this.authService.refreshTokens(refreshToken);
+
+    // 쿠기 기반 인증 설정
+    await this.setAuthCookies(res, header);
+
+    // 응답(Body) 전송
+    return res.json(body);
+  }
+
+  // 쿠키 기반 인증 설정
+  private async setAuthCookies(@Res() res, header) {
+    res.cookie('accessToken', header.accessToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'Strict',
+      maxAge: 1000 * 10, // 10초(임시)
+    });
+    res.cookie('refreshToken', header.refreshToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'Strict',
+      maxAge: 1000 * 60 * 60 * 24 * 7, // 7일
+    });
   }
 
   // @Post('genPassword')
@@ -72,10 +108,11 @@ export class AuthController {
   //   return this.authService.create(createAuthDto);
   // }
 
-  // @Get()
-  // findAll() {
-  //   return this.authService.findAll();
-  // }
+  @UseGuards(AuthGuard)
+  @Get('guard')
+  findAll() {
+    return 'guard';
+  }
 
   // @Get(':id')
   // findOne(@Param('id') id: string) {

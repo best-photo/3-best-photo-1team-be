@@ -31,35 +31,3 @@ export class TokenOptionsDto {
   secret: string;
   expiresIn: string;
 }
-
-// export class PassDto {
-//   @IsString()
-//   @IsNotEmpty()
-//   password: string;
-// }
-
-// export class SignupResponseDto {
-//   headers: Record<string, string>;
-//   body: {
-//     message: string;
-//     user: {
-//       id: number;
-//       email: string;
-//       nickname: string;
-//       points: number;
-//     };
-//   };
-// }
-
-// export class SigninResponseDto {
-//   headers: Record<string, string>;
-//   body: {
-//     message: string;
-//     user: {
-//       id: number;
-//       email: string;
-//       nickname: string;
-//       points: number;
-//     };
-//   };
-// }
