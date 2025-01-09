@@ -3,7 +3,6 @@ import {
   UnauthorizedException,
   ConflictException,
   Res,
-  Req,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
@@ -263,10 +262,12 @@ export class AuthService {
       });
 
       if (!refreshToken || !storedRefreshToken) {
-        return await this.jwtService.verifyAsync(refreshToken, {
-          secret: this.configService.getOrThrow<string>('JWT_REFRESH_SECRET'),
-        });
+        throw new UnauthorizedException('유효하지 않은 리프레시 토큰입니다.');
       }
+
+      return await this.jwtService.verifyAsync(refreshToken, {
+        secret: this.configService.getOrThrow<string>('JWT_REFRESH_SECRET'),
+      });
     } catch (error) {
       throw new UnauthorizedException(
         '리프레시 토큰 검증에 실패했습니다.',
