@@ -38,59 +38,64 @@ export class AuthService {
     // 비밀번호 해시화
     const hashedPassword = await argon2.hash(dto.password);
 
-    return await this.prisma.$transaction(async (tx) => {
-      // 사용자 생성
-      // points는 create 시 defautltValue 0으로 설정되어 있어 생략
-      const user = await tx.user.create({
-        data: {
-          email: dto.email,
-          password: hashedPassword,
-          nickname: dto.nickname,
-        },
-      });
+    return await this.prisma
+      .$transaction(async (tx) => {
+        // 사용자 생성
+        // points는 create 시 defautltValue 0으로 설정되어 있어 생략
+        const user = await tx.user.create({
+          data: {
+            email: dto.email,
+            password: hashedPassword,
+            nickname: dto.nickname,
+          },
+        });
 
-      // 만약 user가 제대로 생성되지 않았다면 예외 발생
-      if (!user) {
-        throw new ConflictException('사용자 생성에 실패했습니다.');
-      }
+        // 만약 user가 제대로 생성되지 않았다면 예외 발생
+        // if (!user) {
+        //   throw new ConflictException('사용자 생성에 실패했습니다.');
+        // }
 
-      // 유저를 생성한 후, 유저와 연관된 테이블(Point, PointHistory)의 데이터도 같이 생성해야 함
-      // 가입 시 포인트 추가(기본:0)를 위해 point 생성, 그 다음 포인트 이력을 추가하기 위해 pointHistory 생성
+        // 유저를 생성한 후, 유저와 연관된 테이블(Point, PointHistory)의 데이터도 같이 생성해야 함
+        // 가입 시 포인트 추가(기본:0)를 위해 point 생성, 그 다음 포인트 이력을 추가하기 위해 pointHistory 생성
 
-      const point = await tx.point.create({
-        data: {
-          user: {
-            connect: {
-              id: user.id,
+        const point = await tx.point.create({
+          data: {
+            user: {
+              connect: {
+                id: user.id,
+              },
             },
           },
-        },
-      });
+        });
 
-      if (!point) {
-        throw new ConflictException('포인트 생성에 실패했습니다.');
-      }
+        if (!point) {
+          throw new ConflictException('포인트 생성에 실패했습니다.');
+        }
 
-      const pointHistory = await tx.pointHistory.create({
-        data: {
-          user: {
-            connect: {
-              id: user.id,
+        // 포인트 히스토리 테이블에 가입 포인트 이력 추가
+        await tx.pointHistory.create({
+          data: {
+            user: {
+              connect: {
+                id: user.id,
+              },
             },
+            points: point.balance || 0,
+            pointType: PointType.JOIN,
           },
-          points: point.balance || 0,
-          pointType: PointType.JOIN,
-        },
+        });
+
+        // if (!pointHistory) {
+        //   throw new ConflictException('포인트 히스토리 생성에 실패했습니다.');
+        // }
+
+        return {
+          message: '회원가입이 완료되었습니다.',
+        };
+      })
+      .catch(() => {
+        throw new ConflictException('회원가입에 실패했습니다.');
       });
-
-      if (!pointHistory) {
-        throw new ConflictException('포인트 히스토리 생성에 실패했습니다.');
-      }
-
-      return {
-        message: '회원가입이 완료되었습니다.',
-      };
-    });
   }
 
   // 로그인
@@ -218,12 +223,10 @@ export class AuthService {
   // accessToken 검증
   async verifyAccessToken(accessToken: string) {
     try {
-      console.log('accessToken', accessToken);
       return await this.jwtService.verifyAsync(accessToken, {
         secret: this.configService.getOrThrow<string>('JWT_SECRET'),
       });
     } catch (error) {
-      console.log(error);
       throw new UnauthorizedException(
         '토큰 검증에 실패했습니다.',
         error.message,
@@ -234,12 +237,10 @@ export class AuthService {
   // refreshToken 검증
   async verifyRefreshToken(refreshToken: string) {
     try {
-      console.log('refreshToken', refreshToken);
       return await this.jwtService.verifyAsync(refreshToken, {
         secret: this.configService.getOrThrow<string>('JWT_REFRESH_SECRET'),
       });
     } catch (error) {
-      console.log(error);
       throw new UnauthorizedException(
         '토큰 검증에 실패했습니다.',
         error.message,

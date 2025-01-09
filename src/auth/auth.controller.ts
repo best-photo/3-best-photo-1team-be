@@ -48,6 +48,7 @@ export class AuthController {
   }
 
   // 로그아웃
+  // 로그아웃
   @UseGuards(AuthGuard)
   @Post('logout')
   @ApiResponse({
@@ -72,7 +73,6 @@ export class AuthController {
   })
   async refresh(@Req() req, @Res() res) {
     const refreshToken = req.cookies['refreshToken'];
-    console.log(refreshToken);
     const { header, body } = await this.authService.refreshTokens(refreshToken);
 
     // 쿠기 기반 인증 설정
@@ -88,7 +88,7 @@ export class AuthController {
       httpOnly: true,
       secure: true,
       sameSite: 'Strict',
-      maxAge: 1000 * 10, // 10초(임시)
+      maxAge: 1000 * 60 * 10, // 10분
     });
     res.cookie('refreshToken', header.refreshToken, {
       httpOnly: true,
@@ -98,34 +98,11 @@ export class AuthController {
     });
   }
 
-  // @Post('genPassword')
-  // async genPassword(@Body() dto: PassDto) {
-  //   return this.authService.generatePasswordHash(dto);
-  // }
-
-  // @Post()
-  // create(@Body() createAuthDto: CreateAuthDto) {
-  //   return this.authService.create(createAuthDto);
-  // }
-
+  // 아래와 같이 사용하려는 API Endpoint위에 @UseGuards(AuthGuard) 데코레이터를 추가하면
+  // 쿠키 기반 인증을 검사합니다. 권한이 없으면 에러를 반환합니다.
   @UseGuards(AuthGuard)
   @Get('guard')
   findAll() {
     return 'guard';
   }
-
-  // @Get(':id')
-  // findOne(@Param('id') id: string) {
-  //   return this.authService.findOne(+id);
-  // }
-
-  // @Patch(':id')
-  // update(@Param('id') id: string, @Body() updateAuthDto: UpdateAuthDto) {
-  //   return this.authService.update(+id, updateAuthDto);
-  // }
-
-  // @Delete(':id')
-  // remove(@Param('id') id: string) {
-  //   return this.authService.remove(+id);
-  // }
 }

@@ -25,7 +25,7 @@ export class AuthGuard implements CanActivate {
       await this.authService.verifyAccessToken(accessToken);
       await this.authService.verifyRefreshToken(refreshToken);
     } catch (error) {
-      throw new UnauthorizedException('로그인이 필요합니다.', error.message);
+      throw new UnauthorizedException('로그인이 필요합니다.(권한 없음)');
     }
     return true;
   }
