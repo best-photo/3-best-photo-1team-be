@@ -8,6 +8,10 @@ import {
   IsString,
   Length,
   Min,
+  registerDecorator,
+  ValidationOptions,
+  ValidationArguments,
+  Max,
 } from 'class-validator';
 
 // 카드 정보 DTO
@@ -41,12 +45,13 @@ export class CardDto {
 
   @ApiProperty({
     nullable: false,
-    description: '카드 가격 (0 이상)',
+    description: '카드 가격 (0 이상, 10억원 이하)',
     example: 1000,
     type: Number,
   })
   @IsInt()
   @Min(0) // 가격 음수 방지
+  @Max(1000000000) // 10억원 상한선 설정
   price: number;
 
   @ApiProperty({
@@ -98,6 +103,9 @@ export class CardDto {
   })
   @IsInt()
   @Min(0) // 남은 수량은 0 이상
+  @IsLessThanOrEqual('totalQuantity', {
+    message: '남은 수량은 총 발행량을 초과할 수 없습니다',
+  })
   remainingQuantity: number;
 
   // string 타입으로 해야할지 Date 타입으로 해야할지 고민이 많이 됨
@@ -115,4 +123,31 @@ export class CardDto {
     example: '2024-12-31T12:00:00Z',
   })
   updatedAt: Date;
+}
+
+// 남은 수량이 총 발행량을 초과하지 않는지 확인하는 커스텀 유효성 검사 데코레이터
+function IsLessThanOrEqual(
+  property: string,
+  validationOptions?: ValidationOptions,
+) {
+  return function (object: object, propertyName: string) {
+    registerDecorator({
+      name: 'isLessThanOrEqual',
+      target: object.constructor,
+      propertyName: propertyName,
+      constraints: [property],
+      options: validationOptions,
+      validator: {
+        validate(value: any, args: ValidationArguments) {
+          const [relatedPropertyName] = args.constraints;
+          const relatedValue = (args.object as any)[relatedPropertyName];
+          return (
+            typeof value === 'number' &&
+            typeof relatedValue === 'number' &&
+            value <= relatedValue
+          );
+        },
+      },
+    });
+  };
 }
