@@ -1,13 +1,17 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, PickType } from '@nestjs/swagger';
 import { createId } from '@paralleldrive/cuid2';
 import {
   IsEmail,
   IsJWT,
   IsNotEmpty,
+  IsNumber,
+  IsOptional,
   IsString,
   Length,
   Matches,
+  Max,
   MaxLength,
+  Min,
   MinLength,
 } from 'class-validator';
 
@@ -78,4 +82,62 @@ export class UserDto {
     message: 'JWT 토큰은 최대 1024자까지 입력할 수 있습니다.',
   })
   refreshToken?: string;
+
+  @ApiProperty({
+    nullable: true,
+    description: '포인트',
+    example: 0,
+    type: Number,
+  })
+  @IsNumber()
+  @IsOptional()
+  @Min(0, { message: '포인트는 0 이상이어야 합니다.' })
+  @Max(1000000, { message: '포인트는 최대 1,000,000까지 입력할 수 있습니다.' })
+  points?: number;
 }
+
+export class CheckEmailRequestDto extends PickType(UserDto, ['email']) {}
+
+export class CheckNicknameRequestDto extends PickType(UserDto, ['nickname']) {}
+
+export class CheckEmailResponseDto {
+  @ApiProperty({
+    nullable: false,
+    description: '이메일 중복 체크 결과 메시지',
+    example: '사용 가능한 이메일입니다.',
+    type: String,
+  })
+  message: string;
+
+  @ApiProperty({
+    nullable: false,
+    description: '상태 코드',
+    example: 200,
+    type: Number,
+  })
+  statusCode: number;
+}
+
+export class CheckNicknameResponseDto {
+  @ApiProperty({
+    nullable: false,
+    description: '닉네임 중복 체크 결과 메시지',
+    example: '사용 가능한 닉네임입니다.',
+    type: String,
+  })
+  message: string;
+
+  @ApiProperty({
+    nullable: false,
+    description: '상태 코드',
+    example: 200,
+    type: Number,
+  })
+  statusCode: number;
+}
+
+export class ProfileResponseDto extends PickType(UserDto, [
+  'email',
+  'nickname',
+  'points',
+]) {}

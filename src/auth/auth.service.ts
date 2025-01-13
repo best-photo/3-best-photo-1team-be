@@ -3,6 +3,8 @@ import {
   UnauthorizedException,
   ConflictException,
   Res,
+  Req,
+  BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
@@ -189,15 +191,19 @@ export class AuthService {
 
   // 로그아웃
   async logout(refreshToken: string, @Res() res) {
-    // refreshToken 검증
-    const userId = (await this.verifyRefreshToken(refreshToken)).sub;
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: { refreshToken: null }, // 토큰 무효화
-    });
-    res.clearCookie('accessToken');
-    res.clearCookie('refreshToken');
-    return res.json({ message: '로그아웃 성공' });
+    try {
+      // refreshToken 검증
+      const userId = (await this.verifyRefreshToken(refreshToken)).sub;
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { refreshToken: null }, // 토큰 무효화
+      });
+      res.clearCookie('accessToken');
+      res.clearCookie('refreshToken');
+      return res.json({ message: '로그아웃 성공' });
+    } catch (error) {
+      throw new UnauthorizedException('로그아웃을 실패했습니다.');
+    }
   }
 
   // 토큰 갱신
@@ -274,5 +280,37 @@ export class AuthService {
         error.message,
       );
     }
+  }
+
+  // accessToken 디코딩
+  async decodeAccessToken(accessToken: string) {
+    try {
+      const user = await this.verifyAccessToken(accessToken);
+      // 디코딩된 토큰은 payload와 iat, exp, sub 등의 정보를 포함
+      return {
+        userId: user['sub'],
+        expires: user['exp'],
+      };
+    } catch (error) {
+      throw new UnauthorizedException(
+        '액세스 토큰 디코딩에 실패했습니다.',
+        error.message,
+      );
+    }
+  }
+  // 쿠키에서 사용자 정보 가져오기
+  async getUserFromCookie(@Req() req) {
+    const accessToken = req.cookies.accessToken;
+    if (!accessToken) {
+      throw new BadRequestException('로그인이 필요합니다.');
+    }
+    if (typeof accessToken !== 'string') {
+      throw new BadRequestException('유효하지 않은 토큰 형식입니다.');
+    }
+    const decoded = await this.decodeAccessToken(accessToken);
+    if (decoded.expires * 1000 < Date.now()) {
+      throw new UnauthorizedException('토큰이 만료되었습니다.');
+    }
+    return decoded;
   }
 }

@@ -8,17 +8,18 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { CardsModule } from './cards/cards.module';
 import { PointsModule } from './points/points.module';
 import { ConfigModule } from '@nestjs/config';
+import { PassportModule } from '@nestjs/passport';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    PassportModule.register({ defaultStrategy: 'jwt' }),
     AuthModule,
     ShopModule,
     CardsModule,
     NotificationsModule,
-    UsersModule,
     UsersModule,
     NotificationsModule,
     CardsModule,
