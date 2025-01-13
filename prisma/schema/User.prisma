@@ -1,8 +1,8 @@
 model User {
   id          String       @id @default(cuid())
-  email       String       @db.VarChar(255) @unique /// 이메일 중복 방지
+  email       String       @db.VarChar(255) @unique /// 이메일 중복 방지 및 길이 제한(5~255자)
   password    String       @db.VarChar(255)  /// 해시된 암호 저장 (최소 8자 이상)
-  nickname    String       @db.VarChar(50)  /// 닉네임 길이 제한(2~50자)
+  nickname    String       @db.VarChar(50) @unique /// 닉네임 중복 방지 및 길이 제한(2~50자)
   refreshToken String?     @db.Text  /// JWT 리프레시 토큰
 
   point          Point? /// 사용자의 포인트(유저와 포인트 모델은 1:1 관계)
