@@ -189,15 +189,19 @@ export class AuthService {
 
   // 로그아웃
   async logout(refreshToken: string, @Res() res) {
-    // refreshToken 검증
-    const userId = (await this.verifyRefreshToken(refreshToken)).sub;
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: { refreshToken: null }, // 토큰 무효화
-    });
-    res.clearCookie('accessToken');
-    res.clearCookie('refreshToken');
-    return res.json({ message: '로그아웃 성공' });
+    try {
+      // refreshToken 검증
+      const userId = (await this.verifyRefreshToken(refreshToken)).sub;
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { refreshToken: null }, // 토큰 무효화
+      });
+      res.clearCookie('accessToken');
+      res.clearCookie('refreshToken');
+      return res.json({ message: '로그아웃 성공' });
+    } catch (error) {
+      throw new UnauthorizedException('로그아웃을 실패했습니다.');
+    }
   }
 
   // 토큰 갱신

@@ -6,6 +6,8 @@ import {
   Req,
   UseGuards,
   Get,
+  HttpStatus,
+  HttpCode,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { SignInRequestDto, SignUpRequestDto } from './dto/auth.dto';
@@ -23,6 +25,7 @@ export class AuthController {
     status: 201,
     description: '회원가입이 완료되었습니다.',
   })
+  @HttpCode(HttpStatus.CREATED)
   async signup(
     @Body() signupRequestDto: SignUpRequestDto,
   ): Promise<{ message: string }> {
@@ -37,6 +40,7 @@ export class AuthController {
     status: 200,
     description: '로그인 성공',
   })
+  @HttpCode(HttpStatus.OK)
   async login(@Body() signInRequestDto: SignInRequestDto, @Res() res) {
     const { header, body } = await this.authService.signin(signInRequestDto);
 
@@ -54,6 +58,7 @@ export class AuthController {
     status: 200,
     description: '로그아웃 성공',
   })
+  @HttpCode(HttpStatus.OK)
   async logout(@Req() req, @Res() res) {
     const invalidateToken = req.cookies['refreshToken'];
     return await this.authService.logout(invalidateToken, res);
@@ -80,7 +85,7 @@ export class AuthController {
     return res.json(body);
   }
 
-  // 쿠키 기반 인증 설정
+  // 쿠키 기반 인증 설정(accessToken, refreshToken 둘 다 설정)
   private async setAuthCookies(@Res() res, header) {
     res.cookie('accessToken', header.accessToken, {
       httpOnly: true,
@@ -100,6 +105,14 @@ export class AuthController {
   // 쿠키 기반 인증을 검사합니다. 권한이 없으면 에러를 반환합니다.
   @UseGuards(AuthGuard)
   @Get('guard')
+  @ApiResponse({
+    status: 200,
+    description: '인증 성공',
+  })
+  @ApiResponse({
+    status: 401,
+    description: '인증 실패',
+  })
   findAll() {
     return 'guard';
   }
