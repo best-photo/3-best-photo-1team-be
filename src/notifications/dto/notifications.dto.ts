@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { createId } from '@paralleldrive/cuid2';
+import { Transform } from 'class-transformer';
 import {
   IsBoolean,
   IsNotEmpty,
@@ -93,6 +94,7 @@ export class NotificationFilterDto {
     required: false,
   })
   @IsOptional()
+  @Transform(({ value }) => parseInt(value) || 1)
   page?: number = 1;
 
   @ApiProperty({
@@ -101,5 +103,6 @@ export class NotificationFilterDto {
     required: false,
   })
   @IsOptional()
+  @Transform(({ value }) => parseInt(value) || 1)
   limit?: number = 10;
 }
