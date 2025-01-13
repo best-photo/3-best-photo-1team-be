@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { NotificationFilterDto } from './dto/notifications.dto';
 
@@ -31,5 +31,25 @@ export class NotificationsService {
       notifications,
       metadata: { total, page, limit, totalPages: Math.ceil(total / limit) },
     };
+  }
+
+  // 알림 읽음 처리
+  async update(notificationId: string) {
+    const notification = await this.prisma.notification.findUnique({
+      where: { id: notificationId },
+    });
+
+    // 알림이 존재하지 않으면 에러 발생
+    if (!notification) {
+      throw new NotFoundException('알림이 존재하지 않습니다.');
+    }
+
+    // 알림 읽음 처리
+    return this.prisma.notification.update({
+      where: { id: notificationId },
+      data: {
+        isRead: true,
+      },
+    });
   }
 }

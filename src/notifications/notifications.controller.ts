@@ -1,4 +1,4 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Param, Patch, Query } from '@nestjs/common';
 import { NotificationsService } from './notifications.service';
 import {
   ApiBearerAuth,
@@ -24,5 +24,12 @@ export class NotificationsController {
   ) {
     const { userId } = user;
     return await this.notificationsService.findAll(userId, filterDto);
+  }
+
+  @Patch(':id')
+  @ApiOperation({ summary: '알림 상태 수정' })
+  @ApiResponse({ status: 200, description: '알림 상태 수정 성공' })
+  async updateNotification(@Param('id') notificationId: string) {
+    return this.notificationsService.update(notificationId);
   }
 }
