@@ -5,7 +5,6 @@ import {
   Body,
   HttpCode,
   UseGuards,
-  Req,
   BadRequestException,
   InternalServerErrorException,
 } from '@nestjs/common';
