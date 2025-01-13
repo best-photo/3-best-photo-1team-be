@@ -1,34 +1,27 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Query } from '@nestjs/common';
 import { NotificationsService } from './notifications.service';
-import { CreateNotificationDto } from './dto/create-notification.dto';
-import { UpdateNotificationDto } from './dto/update-notification.dto';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
+import { NotificationFilterDto } from './dto/notifications.dto';
+import { GetUser } from 'src/auth/decorators/get-user.decorator';
 
+@ApiTags('Notifications')
 @Controller('notifications')
+@ApiBearerAuth() // 인증이 필요한 API임을 Swagger에 명시
 export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}
 
-  @Post()
-  create(@Body() createNotificationDto: CreateNotificationDto) {
-    return this.notificationsService.create(createNotificationDto);
-  }
-
   @Get()
-  findAll() {
-    return this.notificationsService.findAll();
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.notificationsService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateNotificationDto: UpdateNotificationDto) {
-    return this.notificationsService.update(+id, updateNotificationDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.notificationsService.remove(+id);
+  @ApiOperation({ summary: '알림 목록 조회' })
+  @ApiResponse({ status: 200, description: '알림 목록 조회 성공' })
+  async getNotifications(
+    @GetUser() userId: string,
+    @Query() filterDto: NotificationFilterDto,
+  ) {
+    return await this.notificationsService.findAll(userId, filterDto);
   }
 }
