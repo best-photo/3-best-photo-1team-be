@@ -11,6 +11,7 @@ import {
   Matches,
   Max,
   MaxLength,
+  Min,
   MinLength,
 } from 'class-validator';
 
@@ -90,6 +91,7 @@ export class UserDto {
   })
   @IsNumber()
   @IsOptional()
+  @Min(0, { message: '포인트는 0 이상이어야 합니다.' })
   @Max(1000000, { message: '포인트는 최대 1,000,000까지 입력할 수 있습니다.' })
   points?: number;
 }

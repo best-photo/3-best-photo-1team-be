@@ -285,7 +285,7 @@ export class AuthService {
   // accessToken 디코딩
   async decodeAccessToken(accessToken: string) {
     try {
-      const user = await this.jwtService.decode(accessToken);
+      const user = await this.verifyAccessToken(accessToken);
       // 디코딩된 토큰은 payload와 iat, exp, sub 등의 정보를 포함
       return {
         userId: user['sub'],
@@ -304,6 +304,13 @@ export class AuthService {
     if (!accessToken) {
       throw new BadRequestException('로그인이 필요합니다.');
     }
-    return await this.decodeAccessToken(accessToken);
+    if (typeof accessToken !== 'string') {
+      throw new BadRequestException('유효하지 않은 토큰 형식입니다.');
+    }
+    const decoded = await this.decodeAccessToken(accessToken);
+    if (decoded.expires * 1000 < Date.now()) {
+      throw new UnauthorizedException('토큰이 만료되었습니다.');
+    }
+    return decoded;
   }
 }

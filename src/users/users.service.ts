@@ -32,6 +32,9 @@ export class UsersService {
       if (!user) {
         throw new BadRequestException('내 프로필이 존재하지 않습니다.');
       }
+      if (!user.point) {
+        throw new BadRequestException('포인트 정보가 존재하지 않습니다.');
+      }
       return {
         email: user.email,
         nickname: user.nickname,

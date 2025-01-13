@@ -16,15 +16,27 @@ export const GetUser = createParamDecorator(
       throw new BadRequestException('로그인이 필요합니다.');
     }
 
-    const jwtService = new JwtService();
     try {
+      const jwtService = new JwtService({
+        secret: process.env.JWT_SECRET,
+      });
       const user = jwtService.decode(accessToken);
+      console.log('user', user);
+      if (!user) {
+        throw new BadRequestException('유효하지 않은 사용자입니다.');
+      }
       return {
         userId: user['sub'],
         expires: user['exp'],
       };
     } catch (error) {
-      throw new BadRequestException('액세스 토큰 디코딩에 실패했습니다.');
+      if (error.name === 'JsonWebTokenError') {
+        throw new BadRequestException('유효하지 않은 토큰입니다.');
+      }
+      if (error.name === 'TokenExpiredError') {
+        throw new BadRequestException('만료된 토큰입니다.');
+      }
+      throw new BadRequestException('액세스 토큰 검증에 실패했습니다.');
     }
   },
 );

@@ -49,12 +49,10 @@ export class UsersController {
     // 사용자 정보가 없으면 NotFoundException 예외 발생
     // 사용자 정보가 있으면 사용자 정보 반환
     try {
-      const { userId } = user;
-      // console.log('userId', userId);
-      // const { userId } = await this.authService.getUserFromCookie(req);
       if (!user) {
         throw new BadRequestException('사용자 정보가 존재하지 않습니다.');
       }
+      const { userId } = user;
       return await this.usersService.getProfile(userId);
     } catch (error) {
       // Prisma 관련 에러 처리
