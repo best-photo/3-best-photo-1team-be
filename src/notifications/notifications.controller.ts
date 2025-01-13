@@ -19,9 +19,10 @@ export class NotificationsController {
   @ApiOperation({ summary: '알림 목록 조회' })
   @ApiResponse({ status: 200, description: '알림 목록 조회 성공' })
   async getNotifications(
-    @GetUser() userId: string,
+    @GetUser() user,
     @Query() filterDto: NotificationFilterDto,
   ) {
+    const { userId } = user;
     return await this.notificationsService.findAll(userId, filterDto);
   }
 }
