@@ -2,7 +2,10 @@ import { OmitType } from '@nestjs/swagger';
 import { UserDto } from 'src/users/dto/user.dto';
 
 // 회원가입 요청 DTO
-export class SignUpRequestDto extends OmitType(UserDto, ['id']) {}
+export class SignUpRequestDto extends OmitType(UserDto, [
+  'id',
+  'refreshToken',
+]) {}
 
 // 회원가입 응답 DTO
 export class SignupResponseDto extends OmitType(UserDto, ['password']) {}
