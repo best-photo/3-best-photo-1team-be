@@ -1,6 +1,13 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { createId } from '@paralleldrive/cuid2';
-import { IsBoolean, IsString, Length } from 'class-validator';
+import { Transform } from 'class-transformer';
+import {
+  IsBoolean,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  Length,
+} from 'class-validator';
 
 export class NotificationDto {
   @ApiProperty({
@@ -41,4 +48,61 @@ export class NotificationDto {
   })
   @IsBoolean()
   isRead: boolean = false; // 기본값은 false
+}
+
+// 알림 생성 DTO
+export class CreateNotificationDto {
+  @ApiProperty({
+    nullable: false,
+    description: '사용자 ID',
+    example: createId(),
+    type: String,
+  })
+  @IsString()
+  @IsNotEmpty()
+  userId: string;
+
+  @ApiProperty({
+    nullable: false,
+    description: '알림내용',
+    example: '새로운 교환 제안이 있습니다.',
+    type: String,
+  })
+  @IsString()
+  @IsNotEmpty()
+  content: string;
+}
+
+// 알림 수정 DTO
+export class UpdateNotificationDto {
+  @ApiProperty({
+    nullable: false,
+    description: '읽음 상태',
+    example: true,
+    type: Boolean,
+  })
+  @IsBoolean()
+  @IsOptional()
+  isRead?: boolean;
+}
+
+// 필터링용 DTO
+export class NotificationFilterDto {
+  @ApiProperty({
+    description: '페이지 번호',
+    example: 1,
+    required: false,
+  })
+  @IsOptional()
+  @Transform(({ value }) => parseInt(value) || 1)
+  page?: number = 1;
+
+  @ApiProperty({
+    description: '페이지 당 항목 수',
+    example: 10,
+    required: false,
+  })
+  @IsOptional()
+  @Transform(({ value }) => parseInt(value) || 1)
+  limit?: number = 10;
 }
