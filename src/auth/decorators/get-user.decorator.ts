@@ -21,7 +21,6 @@ export const GetUser = createParamDecorator(
         secret: process.env.JWT_SECRET,
       });
       const user = jwtService.decode(accessToken);
-      console.log('user', user);
       if (!user) {
         throw new BadRequestException('유효하지 않은 사용자입니다.');
       }

@@ -94,10 +94,7 @@ export class UsersController {
   // 리소스가 생성되는 것이 아니라 중복 체크만 하는 것이므로
   // 기본 상태코드인 201 Created가 아닌 200 OK을 명시적으로 반환
   @HttpCode(200)
-  async checkEmail(
-    @Req() req,
-    @Body() checkEmailRequestDto: CheckEmailRequestDto,
-  ) {
+  async checkEmail(@Body() checkEmailRequestDto: CheckEmailRequestDto) {
     // 사용자 id 받기
     // 사용자 id가 없으면 BadRequestException 예외 발생
     // 사용자 id가 있으면 사용자 정보 반환
