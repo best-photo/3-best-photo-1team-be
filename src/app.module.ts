@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
@@ -18,7 +18,6 @@ import { ConfigModule } from '@nestjs/config';
     ShopModule,
     CardsModule,
     NotificationsModule,
-    UsersModule,
     UsersModule,
     NotificationsModule,
     CardsModule,
