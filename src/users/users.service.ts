@@ -14,6 +14,7 @@ import {
 } from './dto/user.dto';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { CreateCardDto } from 'src/cards/dto/create-card.dto';
+import { CardGenre, CardGrade, Prisma } from '@prisma/client';
 
 @Injectable()
 export class UsersService {
@@ -178,4 +179,40 @@ export class UsersService {
   }   
   }
 
+  async getUserCards(
+    userId: string,
+    search: string = '',
+    sortGrade: CardGrade | '' = '',
+    sortGenre: CardGenre | '' = '',
+    page: number = 1,
+    limit: number = 10,
+  ) {
+    const skip = (page - 1) * limit;
+  
+    const where: Prisma.CardWhereInput = {
+      ownerId: userId,
+      ...(search && { name: { contains: search, mode: 'insensitive' } }),
+      ...(sortGrade && { grade: sortGrade }),
+      ...(sortGenre && { genre: sortGenre }),
+    };
+  
+    console.log('WHERE CONDITIONS:', where); // 조건 확인
+  
+    const cards = await this.prisma.card.findMany({
+      where,
+      skip,
+      take: limit,
+    });
+  
+    const totalCount = await this.prisma.card.count({
+      where,
+    });
+  
+    return {
+      cards,
+      totalCount,
+      totalPages: Math.ceil(totalCount / limit),
+      currentPage: page,
+    };
+  }
 }
