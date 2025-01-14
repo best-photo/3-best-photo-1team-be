@@ -140,6 +140,14 @@ export class UsersService {
   async createCard(userId: string, createCardDto: CreateCardDto) {
     const { name, grade, genre, price, totalQuantity, description } = createCardDto;
 
+    if (totalQuantity <= 0) {
+      throw new BadRequestException('총 수량은 0보다 커야 합니다.');
+    }
+
+    if (price < 0) {
+      throw new BadRequestException('가격은 0 이상이어야 합니다.');
+    }
+
     const newCard = await this.prisma.card.create({
       data: {
         ownerId: userId, // 로그인한 유저의 ID를 카드 소유자로 설정

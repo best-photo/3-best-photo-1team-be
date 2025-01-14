@@ -156,6 +156,17 @@ export class UsersController {
     @Body() createCardDto: CreateCardDto,
     @GetUser() user: { userId: string }, // GetUser 데코레이터로 유저 정보 가져오기
   ) {
-    return this.usersService.createCard(user.userId, createCardDto);
+    try{
+      return this.usersService.createCard(user.userId, createCardDto);
+    }catch (error) {
+      if (error instanceof PrismaClientKnownRequestError) {
+        throw new InternalServerErrorException(
+          '데이터베이스 작업 중 오류가 발생했습니다.'
+        );
+      }
+      throw new InternalServerErrorException(
+        '포토카드 생성 중 오류가 발생했습니다.',
+      );
+    }
   }
 }
