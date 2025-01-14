@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { NotificationFilterDto } from './dto/notifications.dto';
 
@@ -6,9 +6,26 @@ import { NotificationFilterDto } from './dto/notifications.dto';
 export class NotificationsService {
   constructor(private prisma: PrismaService) {} // 데이터베이스 연결을 위한 도구
 
+  async create(userId: string, content: string) {
+    // 알림 생성
+    return await this.prisma.notification.create({
+      data: {
+        userId,
+        content,
+        isRead: false,
+      },
+    });
+  }
+
   // 알림 목록 조회
   async findAll(userId: string, filterDto: NotificationFilterDto) {
-    const { page = 1, limit = 10 } = filterDto;
+    // 페이지네이션 처리(음수 방지)
+    const page = Math.max(1, parseInt(filterDto.page || '1', 10));
+    const limit = Math.min(
+      100,
+      Math.max(1, parseInt(filterDto.limit || '10', 10)),
+    );
+
     const skip = (page - 1) * limit;
 
     // Promise.all을 사용해서 두 가지 작업을 동시에 실행
@@ -31,5 +48,25 @@ export class NotificationsService {
       notifications,
       metadata: { total, page, limit, totalPages: Math.ceil(total / limit) },
     };
+  }
+
+  // 알림 읽음 처리
+  async update(notificationId: string) {
+    const notification = await this.prisma.notification.findUnique({
+      where: { id: notificationId },
+    });
+
+    // 알림이 존재하지 않으면 에러 발생
+    if (!notification) {
+      throw new NotFoundException('알림이 존재하지 않습니다.');
+    }
+
+    // 알림 읽음 처리
+    return this.prisma.notification.update({
+      where: { id: notificationId },
+      data: {
+        isRead: true,
+      },
+    });
   }
 }
