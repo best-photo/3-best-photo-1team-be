@@ -54,6 +54,7 @@ export class NotificationsController {
   }
 
   @Patch(':id')
+  @UseGuards(AuthGuard)
   @ApiOperation({ summary: '알림 상태 수정' })
   @ApiResponse({
     status: 200,

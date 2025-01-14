@@ -19,8 +19,12 @@ export class NotificationsService {
 
   // 알림 목록 조회
   async findAll(userId: string, filterDto: NotificationFilterDto) {
-    const page = parseInt(filterDto.page || '1', 10); // 기본값 1
-    const limit = parseInt(filterDto.limit || '10', 10); // 기본값 10
+    // 페이지네이션 처리(음수 방지)
+    const page = Math.max(1, parseInt(filterDto.page || '1', 10));
+    const limit = Math.min(
+      100,
+      Math.max(1, parseInt(filterDto.limit || '10', 10)),
+    );
 
     const skip = (page - 1) * limit;
 
