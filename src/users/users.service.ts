@@ -13,7 +13,6 @@ import {
   ProfileResponseDto,
 } from './dto/user.dto';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
-import { CardGenre, CardGrade, Prisma } from '@prisma/client';
 import { CreateCardDto } from 'src/cards/dto/create-card.dto';
 
 @Injectable()
@@ -155,5 +154,14 @@ export class UsersService {
     });
 
     return newCard;
+  } catch (error) {
+    if (error instanceof PrismaClientKnownRequestError) {
+      throw new InternalServerErrorException(
+        '데이터베이스 작업 중 오류가 발생했습니다.',
+      );
+    }
+    throw new InternalServerErrorException(
+      '포토카드 생성 중 오류가 발생했습니다.',
+    );
   }
 }

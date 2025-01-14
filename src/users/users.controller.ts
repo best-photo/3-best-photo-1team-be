@@ -17,7 +17,6 @@ import { AuthService } from 'src/auth/auth.service';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { ApiResponse } from '@nestjs/swagger';
 import { GetUser } from 'src/auth/decorators/get-user.decorator';
-import { CardGenre, CardGrade } from '@prisma/client';
 import { CreateCardDto } from 'src/cards/dto/create-card.dto';
 
 @Controller('users')
@@ -141,6 +140,18 @@ export class UsersController {
  
   @Post('my-cards')
   @UseGuards(AuthGuard)
+  @ApiResponse({
+    status: 201,
+    description: '포토카드 생성 성공',
+  })
+  @ApiResponse({
+    status: 400,
+    description: '잘못된 요청 데이터',
+  })
+  @ApiResponse({
+    status: 401,
+    description: '인증 정보가 존재하지 않습니다.',
+  })
   async createCard(
     @Body() createCardDto: CreateCardDto,
     @GetUser() user: { userId: string }, // GetUser 데코레이터로 유저 정보 가져오기
