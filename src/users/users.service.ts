@@ -148,20 +148,22 @@ export class UsersService {
       throw new BadRequestException('가격은 0 이상이어야 합니다.');
     }
 
-    const newCard = await this.prisma.card.create({
-      data: {
-        ownerId: userId, // 로그인한 유저의 ID를 카드 소유자로 설정
-        name,
-        grade,
-        genre,
-        price,
-        totalQuantity,
-        remainingQuantity: totalQuantity, // 남은 수량 초기화
-        description,
-      },
+    return await this.prisma.$transaction(async (tx) => {
+      const newCard = await tx.card.create({
+        data: {
+          ownerId: userId, // 로그인한 유저의 ID를 카드 소유자로 설정
+          name,
+          grade,
+          genre,
+          price,
+          totalQuantity,
+          remainingQuantity: totalQuantity, // 남은 수량 초기화
+          description,
+        },
+      });
+  
+      return newCard;
     });
-
-    return newCard;
   } catch (error) {
     if (error instanceof PrismaClientKnownRequestError) {
       throw new InternalServerErrorException(
