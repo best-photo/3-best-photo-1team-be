@@ -137,34 +137,36 @@ export class UsersService {
     }
   }
 
+ 
   async createCard(userId: string, createCardDto: CreateCardDto) {
     const { name, grade, genre, price, totalQuantity, description } = createCardDto;
-
+    
     if (totalQuantity <= 0) {
       throw new BadRequestException('총 수량은 0보다 커야 합니다.');
     }
-
+    
     if (price < 0) {
       throw new BadRequestException('가격은 0 이상이어야 합니다.');
     }
-
-    return await this.prisma.$transaction(async (tx) => {
-      const newCard = await tx.card.create({
-        data: {
-          ownerId: userId, // 로그인한 유저의 ID를 카드 소유자로 설정
-          name,
-          grade,
-          genre,
-          price,
-          totalQuantity,
-          remainingQuantity: totalQuantity, // 남은 수량 초기화
-          description,
-        },
+    
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        const newCard = await tx.card.create({
+          data: {
+            ownerId: userId,
+            name,
+            grade,
+            genre,
+            price,
+            totalQuantity,
+            remainingQuantity: totalQuantity,
+            description,
+          },
+        });
+    
+        return newCard;
       });
-  
-      return newCard;
-    });
-  } catch (error) {
+   }catch (error) {
     if (error instanceof PrismaClientKnownRequestError) {
       throw new InternalServerErrorException(
         '데이터베이스 작업 중 오류가 발생했습니다.',
@@ -173,5 +175,7 @@ export class UsersService {
     throw new InternalServerErrorException(
       '포토카드 생성 중 오류가 발생했습니다.',
     );
+  }   
   }
+
 }
