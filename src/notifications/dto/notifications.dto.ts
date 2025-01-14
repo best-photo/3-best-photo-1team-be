@@ -121,15 +121,51 @@ export class PaginationMetadataDto {
     example: 10,
   })
   totalPages: number;
+
+  @ApiProperty({
+    description: '읽지 않은 알림 수',
+    example: 5,
+  })
+  unreadNotificationsCount: number;
+}
+
+export class NotificationSummaryDto {
+  @ApiProperty({
+    description: '알림 ID',
+    example: 'cm5w28azo0001u0qg1l55s0mf',
+    type: String,
+  })
+  id: string;
+
+  @ApiProperty({
+    description: '알림 내용',
+    example: '새로운 교환 제안이 있습니다.',
+    type: String,
+  })
+  content: string;
+
+  @ApiProperty({
+    description: '알림 읽음 여부',
+    example: false,
+    type: Boolean,
+  })
+  isRead: boolean;
+
+  @ApiProperty({
+    description: '알림 생성 일시',
+    example: '2025-01-14T05:56:26.148Z',
+    type: String,
+  })
+  createdAt: Date;
 }
 
 // 알림 목록 응답 DTO
 export class NotificationResponseDto {
   @ApiProperty({
     description: '알림 목록',
-    type: [NotificationDto],
+    type: [NotificationSummaryDto],
   })
-  notifications: NotificationDto[];
+  notifications: NotificationSummaryDto[];
 
   @ApiProperty({
     description: '페이지네이션 메타데이터',
