@@ -7,6 +7,8 @@ import {
   UseGuards,
   BadRequestException,
   InternalServerErrorException,
+  Req,
+  Query,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CheckEmailRequestDto, CheckNicknameRequestDto } from './dto/user.dto';
@@ -15,6 +17,7 @@ import { AuthService } from 'src/auth/auth.service';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { ApiResponse } from '@nestjs/swagger';
 import { GetUser } from 'src/auth/decorators/get-user.decorator';
+import { CreateCardDto } from 'src/cards/dto/create-card.dto';
 
 @Controller('users')
 export class UsersController {
@@ -132,5 +135,38 @@ export class UsersController {
     // 응답으로 닉네임이 존재하면 ConflictException 예외 발생
     // 존재하지 않으면 메시지 반환
     return await this.usersService.checkNickname(checkNicknameRequestDto);
+  }
+
+ 
+  @Post('my-cards')
+  @UseGuards(AuthGuard)
+  @ApiResponse({
+    status: 201,
+    description: '포토카드 생성 성공',
+  })
+  @ApiResponse({
+    status: 400,
+    description: '잘못된 요청 데이터',
+  })
+  @ApiResponse({
+    status: 401,
+    description: '인증 정보가 존재하지 않습니다.',
+  })
+  async createCard(
+    @Body() createCardDto: CreateCardDto,
+    @GetUser() user: { userId: string }, // GetUser 데코레이터로 유저 정보 가져오기
+  ) {
+    try{
+      return this.usersService.createCard(user.userId, createCardDto);
+    }catch (error) {
+      if (error instanceof PrismaClientKnownRequestError) {
+        throw new InternalServerErrorException(
+          '데이터베이스 작업 중 오류가 발생했습니다.'
+        );
+      }
+      throw new InternalServerErrorException(
+        '포토카드 생성 중 오류가 발생했습니다.',
+      );
+    }
   }
 }
