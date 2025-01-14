@@ -197,16 +197,17 @@ export class UsersService {
     };
   
     console.log('WHERE CONDITIONS:', where); // 조건 확인
-  
-    const cards = await this.prisma.card.findMany({
-      where,
-      skip,
-      take: limit,
-    });
-  
-    const totalCount = await this.prisma.card.count({
-      where,
-    });
+
+    const [cards, totalCount] = await Promise.all([
+      this.prisma.card.findMany({
+        where,
+        skip,
+        take:limit,
+      }),
+      this.prisma.card.count({
+        where,
+      })
+    ])
   
     return {
       cards,

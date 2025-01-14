@@ -188,7 +188,7 @@ export class UsersController {
   ) {
     const pageNum = parseInt(page, 10);
     const limitNum = parseInt(limit, 10);
-  
+
     return this.usersService.getUserCards(
       user.userId,
       search || '',
