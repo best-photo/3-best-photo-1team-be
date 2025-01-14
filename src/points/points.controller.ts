@@ -1,20 +1,23 @@
 import {
-  BadRequestException,
   Controller,
   Get,
   InternalServerErrorException,
   Post,
+  UnauthorizedException,
+  UseGuards,
 } from '@nestjs/common';
 import { PointsService } from './points.service';
 import { ApiResponse, ApiTags } from '@nestjs/swagger';
 import { GetUser } from 'src/auth/decorators/get-user.decorator';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
+import { AuthGuard } from 'src/auth/auth.guard';
 
 @ApiTags('Points')
 @Controller('points')
 export class PointsController {
   constructor(private readonly pointsService: PointsService) {}
 
+  @UseGuards(AuthGuard)
   @Post('box')
   @ApiResponse({
     status: 200,
@@ -35,7 +38,7 @@ export class PointsController {
   async openBox(@GetUser() user) {
     try {
       if (!user) {
-        throw new BadRequestException('사용자 정보가 존재하지 않습니다.');
+        throw new UnauthorizedException('사용자 정보가 존재하지 않습니다.');
       }
       const { userId } = user;
       return await this.pointsService.openBox(userId);
@@ -51,6 +54,7 @@ export class PointsController {
     }
   }
 
+  @UseGuards(AuthGuard)
   @Get('last-draw-time')
   @ApiResponse({
     status: 200,
@@ -71,7 +75,7 @@ export class PointsController {
   async getLastDrawTime(@GetUser() user) {
     try {
       if (!user) {
-        throw new BadRequestException('사용자 정보가 존재하지 않습니다.');
+        throw new UnauthorizedException('사용자 정보가 존재하지 않습니다.');
       }
       const { userId } = user;
       return {
