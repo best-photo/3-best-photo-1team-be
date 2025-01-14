@@ -70,7 +70,6 @@ export class PointsService {
 
   async getLastDrawTime(userId: string) {
     const lastDrawPointHistory = await this.findLastDrawPointHistory(userId);
-    console.log(lastDrawPointHistory);
     return new Date(lastDrawPointHistory?.createdAt);
   }
 
@@ -95,7 +94,6 @@ export class PointsService {
       where: { userId, pointType: PointType.DRAW },
       orderBy: { updatedAt: 'desc' },
     });
-    console.log(result);
     return result;
   }
 }
