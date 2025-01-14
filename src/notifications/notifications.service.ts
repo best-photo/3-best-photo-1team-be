@@ -1,26 +1,35 @@
 import { Injectable } from '@nestjs/common';
-import { CreateNotificationDto } from './dto/create-notification.dto';
-import { UpdateNotificationDto } from './dto/update-notification.dto';
+import { PrismaService } from 'src/prisma/prisma.service';
+import { NotificationFilterDto } from './dto/notifications.dto';
 
 @Injectable()
 export class NotificationsService {
-  create(createNotificationDto: CreateNotificationDto) {
-    return 'This action adds a new notification';
-  }
+  constructor(private prisma: PrismaService) {} // 데이터베이스 연결을 위한 도구
 
-  findAll() {
-    return `This action returns all notifications`;
-  }
+  // 알림 목록 조회
+  async findAll(userId: string, filterDto: NotificationFilterDto) {
+    const { page = 1, limit = 10 } = filterDto;
+    const skip = (page - 1) * limit;
 
-  findOne(id: number) {
-    return `This action returns a #${id} notification`;
-  }
+    // Promise.all을 사용해서 두 가지 작업을 동시에 실행
+    // 1. 알림 목록 가져오기
+    // 2. 전체 알림 개수 세기
+    const [notifications, total] = await Promise.all([
+      this.prisma.notification.findMany({
+        where: { userId }, // 현재 사용자의 알림만 조회
+        skip, // skip 개수만큼 건너뛰기
+        take: limit, // limit 개수만큼 가져오기
+        orderBy: { createdAt: 'desc' }, // 최신순으로 정렬
+      }),
+      this.prisma.notification.count({
+        where: { userId },
+      }),
+    ]);
 
-  update(id: number, updateNotificationDto: UpdateNotificationDto) {
-    return `This action updates a #${id} notification`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} notification`;
+    // 알림 목록과 함께 페이지 정보도 반환
+    return {
+      notifications,
+      metadata: { total, page, limit, totalPages: Math.ceil(total / limit) },
+    };
   }
 }
