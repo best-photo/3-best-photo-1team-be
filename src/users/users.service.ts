@@ -13,6 +13,8 @@ import {
   ProfileResponseDto,
 } from './dto/user.dto';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
+import { CardGenre, CardGrade, Prisma } from '@prisma/client';
+import { CreateCardDto } from 'src/cards/dto/create-card.dto';
 
 @Injectable()
 export class UsersService {
@@ -134,5 +136,24 @@ export class UsersService {
         '닉네임 확인 중 오류가 발생했습니다.',
       );
     }
+  }
+
+  async createCard(userId: string, createCardDto: CreateCardDto) {
+    const { name, grade, genre, price, totalQuantity, description } = createCardDto;
+
+    const newCard = await this.prisma.card.create({
+      data: {
+        ownerId: userId, // 로그인한 유저의 ID를 카드 소유자로 설정
+        name,
+        grade,
+        genre,
+        price,
+        totalQuantity,
+        remainingQuantity: totalQuantity, // 남은 수량 초기화
+        description,
+      },
+    });
+
+    return newCard;
   }
 }
