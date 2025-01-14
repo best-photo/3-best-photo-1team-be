@@ -6,9 +6,22 @@ import { NotificationFilterDto } from './dto/notifications.dto';
 export class NotificationsService {
   constructor(private prisma: PrismaService) {} // 데이터베이스 연결을 위한 도구
 
+  async create(userId: string, content: string) {
+    // 알림 생성
+    return await this.prisma.notification.create({
+      data: {
+        userId,
+        content,
+        isRead: false,
+      },
+    });
+  }
+
   // 알림 목록 조회
   async findAll(userId: string, filterDto: NotificationFilterDto) {
-    const { page = 1, limit = 10 } = filterDto;
+    const page = parseInt(filterDto.page || '1', 10); // 기본값 1
+    const limit = parseInt(filterDto.limit || '10', 10); // 기본값 10
+
     const skip = (page - 1) * limit;
 
     // Promise.all을 사용해서 두 가지 작업을 동시에 실행

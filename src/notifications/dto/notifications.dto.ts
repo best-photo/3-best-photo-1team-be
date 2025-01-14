@@ -1,6 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { createId } from '@paralleldrive/cuid2';
-import { Transform } from 'class-transformer';
 import {
   IsBoolean,
   IsNotEmpty,
@@ -54,16 +53,6 @@ export class NotificationDto {
 export class CreateNotificationDto {
   @ApiProperty({
     nullable: false,
-    description: '사용자 ID',
-    example: createId(),
-    type: String,
-  })
-  @IsString()
-  @IsNotEmpty()
-  userId: string;
-
-  @ApiProperty({
-    nullable: false,
     description: '알림내용',
     example: '새로운 교환 제안이 있습니다.',
     type: String,
@@ -90,19 +79,82 @@ export class UpdateNotificationDto {
 export class NotificationFilterDto {
   @ApiProperty({
     description: '페이지 번호',
-    example: 1,
+    example: '1',
     required: false,
   })
   @IsOptional()
-  @Transform(({ value }) => parseInt(value) || 1)
-  page?: number = 1;
+  @IsString()
+  page?: string = '1';
+
+  @ApiProperty({
+    description: '페이지 당 항목 수',
+    example: '10',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  limit?: string = '10';
+}
+
+// 페이지네이션 메타데이터 DTO
+export class PaginationMetadataDto {
+  @ApiProperty({
+    description: '전체 알림 수',
+    example: 100,
+  })
+  total: number;
+
+  @ApiProperty({
+    description: '현재 페이지',
+    example: 1,
+  })
+  page: number;
 
   @ApiProperty({
     description: '페이지 당 항목 수',
     example: 10,
-    required: false,
   })
-  @IsOptional()
-  @Transform(({ value }) => parseInt(value) || 1)
-  limit?: number = 10;
+  limit: number;
+
+  @ApiProperty({
+    description: '전체 페이지 수',
+    example: 10,
+  })
+  totalPages: number;
+}
+
+// 알림 목록 응답 DTO
+export class NotificationResponseDto {
+  @ApiProperty({
+    description: '알림 목록',
+    type: [NotificationDto],
+  })
+  notifications: NotificationDto[];
+
+  @ApiProperty({
+    description: '페이지네이션 메타데이터',
+    type: PaginationMetadataDto,
+  })
+  metadata: PaginationMetadataDto;
+}
+
+// 알림 수정 응답 DTO
+export class UpdateNotificationResponseDto {
+  @ApiProperty({
+    description: '알림 ID',
+    example: 'exampleID',
+  })
+  id: string;
+
+  @ApiProperty({
+    description: '수정된 읽음 상태',
+    example: true,
+  })
+  isRead: boolean;
+
+  @ApiProperty({
+    description: '수정된 날짜',
+    example: '2025-01-14T12:34:56.789Z',
+  })
+  updatedAt: Date;
 }
