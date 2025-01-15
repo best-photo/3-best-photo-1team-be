@@ -30,25 +30,22 @@ export class AuthService {
 
   // 회원가입
   async signup(dto: SignUpRequestDto) {
-    // 이메일 중복 확인
-    const emailExists = await this.usersService.checkEmail({
-      email: dto.email,
-    });
+    try {
+      // 이메일 중복 확인
+      await this.usersService.checkEmail({
+        email: dto.email,
+      });
 
-    // 이메일이 이미 존재하면 예외 발생
-    if (emailExists) {
-      throw new ConflictException('이미 사용 중인 이메일입니다.');
+      // 닉네임 중복 확인
+      await this.usersService.checkNickname({
+        nickname: dto.nickname,
+      });
+    } catch (error) {
+      if (error instanceof ConflictException) {
+        throw error;
+      }
+      throw new ConflictException('회원가입에 실패했습니다.');
     }
-
-    // 닉네임 중복 확인
-    const nicknameExists = await this.usersService.checkNickname({
-      nickname: dto.nickname,
-    });
-
-    if (nicknameExists) {
-      throw new ConflictException('이미 사용 중인 닉네임입니다.');
-    }
-
     // 비밀번호 해시화
     const hashedPassword = await argon2.hash(dto.password);
 
@@ -201,6 +198,9 @@ export class AuthService {
       res.clearCookie('refreshToken');
       return res.json({ message: '로그아웃 성공' });
     } catch (error) {
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
       throw new UnauthorizedException('로그아웃을 실패했습니다.');
     }
   }
