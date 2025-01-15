@@ -17,6 +17,7 @@ import {
   TokenResponseDto,
 } from './dto/auth.dto';
 import { PointType } from '@prisma/client';
+import { UsersService } from 'src/users/users.service';
 
 @Injectable()
 export class AuthService {
@@ -24,18 +25,28 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     private configService: ConfigService,
+    private usersService: UsersService,
   ) {}
 
   // 회원가입
   async signup(dto: SignUpRequestDto) {
     // 이메일 중복 확인
-    const emailExists = await this.prisma.user.findUnique({
-      where: { email: dto.email },
+    const emailExists = await this.usersService.checkEmail({
+      email: dto.email,
     });
 
     // 이메일이 이미 존재하면 예외 발생
     if (emailExists) {
       throw new ConflictException('이미 사용 중인 이메일입니다.');
+    }
+
+    // 닉네임 중복 확인
+    const nicknameExists = await this.usersService.checkNickname({
+      nickname: dto.nickname,
+    });
+
+    if (nicknameExists) {
+      throw new ConflictException('이미 사용 중인 닉네임입니다.');
     }
 
     // 비밀번호 해시화
@@ -54,10 +65,6 @@ export class AuthService {
         });
 
         // 만약 user가 제대로 생성되지 않았다면 예외 발생
-        // if (!user) {
-        //   throw new ConflictException('사용자 생성에 실패했습니다.');
-        // }
-
         // 유저를 생성한 후, 유저와 연관된 테이블(Point, PointHistory)의 데이터도 같이 생성해야 함
         // 가입 시 포인트 추가(기본:0)를 위해 point 생성, 그 다음 포인트 이력을 추가하기 위해 pointHistory 생성
 
@@ -71,10 +78,6 @@ export class AuthService {
           },
         });
 
-        // if (!point) {
-        //   throw new ConflictException('포인트 생성에 실패했습니다.');
-        // }
-
         // 포인트 히스토리 테이블에 가입 포인트 이력 추가
         await tx.pointHistory.create({
           data: {
@@ -87,10 +90,6 @@ export class AuthService {
             pointType: PointType.JOIN,
           },
         });
-
-        // if (!pointHistory) {
-        //   throw new ConflictException('포인트 히스토리 생성에 실패했습니다.');
-        // }
 
         return {
           message: '회원가입이 완료되었습니다.',
