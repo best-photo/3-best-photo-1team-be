@@ -138,18 +138,18 @@ export class UsersService {
     }
   }
 
- 
   async createCard(userId: string, createCardDto: CreateCardDto) {
-    const { name, grade, genre, price, totalQuantity, description } = createCardDto;
-    
+    const { name, grade, genre, price, totalQuantity, description } =
+      createCardDto;
+
     if (totalQuantity <= 0) {
       throw new BadRequestException('총 수량은 0보다 커야 합니다.');
     }
-    
+
     if (price < 0) {
       throw new BadRequestException('가격은 0 이상이어야 합니다.');
     }
-    
+
     try {
       return await this.prisma.$transaction(async (tx) => {
         const newCard = await tx.card.create({
@@ -164,19 +164,19 @@ export class UsersService {
             description,
           },
         });
-    
+
         return newCard;
       });
-   }catch (error) {
-    if (error instanceof PrismaClientKnownRequestError) {
+    } catch (error) {
+      if (error instanceof PrismaClientKnownRequestError) {
+        throw new InternalServerErrorException(
+          '데이터베이스 작업 중 오류가 발생했습니다.',
+        );
+      }
       throw new InternalServerErrorException(
-        '데이터베이스 작업 중 오류가 발생했습니다.',
+        '포토카드 생성 중 오류가 발생했습니다.',
       );
     }
-    throw new InternalServerErrorException(
-      '포토카드 생성 중 오류가 발생했습니다.',
-    );
-  }   
   }
 
   async getUserCards(
@@ -188,27 +188,27 @@ export class UsersService {
     limit: number = 10,
   ) {
     const skip = (page - 1) * limit;
-  
+
     const where: Prisma.CardWhereInput = {
       ownerId: userId,
       ...(search && { name: { contains: search, mode: 'insensitive' } }),
       ...(sortGrade && { grade: sortGrade }),
       ...(sortGenre && { genre: sortGenre }),
     };
-  
+
     console.log('WHERE CONDITIONS:', where); // 조건 확인
 
     const [cards, totalCount] = await Promise.all([
       this.prisma.card.findMany({
         where,
         skip,
-        take:limit,
+        take: limit,
       }),
       this.prisma.card.count({
         where,
-      })
-    ])
-  
+      }),
+    ]);
+
     return {
       cards,
       totalCount,

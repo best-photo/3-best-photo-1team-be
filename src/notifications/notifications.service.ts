@@ -43,10 +43,34 @@ export class NotificationsService {
       }),
     ]);
 
+    // 읽지 않은 알림 개수 세기
+    const unreadNotificationsCount = await this.prisma.notification.count({
+      where: {
+        userId,
+        isRead: false,
+      },
+    });
+
+    // 반환할 알림 목록에서 필요한 정보만 추출
+    const simplifiedNotifications = notifications.map(
+      ({ id, content, isRead, createdAt }) => ({
+        id,
+        content,
+        isRead,
+        createdAt,
+      }),
+    );
+
     // 알림 목록과 함께 페이지 정보도 반환
     return {
-      notifications,
-      metadata: { total, page, limit, totalPages: Math.ceil(total / limit) },
+      notifications: simplifiedNotifications,
+      metadata: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+        unreadNotificationsCount,
+      },
     };
   }
 

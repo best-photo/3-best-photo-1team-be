@@ -138,7 +138,6 @@ export class UsersController {
     return await this.usersService.checkNickname(checkNicknameRequestDto);
   }
 
- 
   @Post('my-cards')
   @UseGuards(AuthGuard)
   @ApiResponse({
@@ -157,12 +156,12 @@ export class UsersController {
     @Body() createCardDto: CreateCardDto,
     @GetUser() user: { userId: string }, // GetUser 데코레이터로 유저 정보 가져오기
   ) {
-    try{
+    try {
       return this.usersService.createCard(user.userId, createCardDto);
-    }catch (error) {
+    } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
         throw new InternalServerErrorException(
-          '데이터베이스 작업 중 오류가 발생했습니다.'
+          '데이터베이스 작업 중 오류가 발생했습니다.',
         );
       }
       throw new InternalServerErrorException(
@@ -173,11 +172,35 @@ export class UsersController {
 
   @Get('my-cards')
   @UseGuards(AuthGuard)
-  @ApiQuery({ name: 'search', required: false, description: 'Search keyword (optional)' })
-  @ApiQuery({ name: 'sortGrade', enum: CardGrade, required: false, description: 'Filter by card grade (optional)' })
-  @ApiQuery({ name: 'sortGenre', enum: CardGenre, required: false, description: 'Filter by card genre (optional)' })
-  @ApiQuery({ name: 'page', required: false, description: 'Page number (optional)', example: '1' })
-  @ApiQuery({ name: 'limit', required: false, description: 'Number of items per page (optional)', example: '10' })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    description: 'Search keyword (optional)',
+  })
+  @ApiQuery({
+    name: 'sortGrade',
+    enum: CardGrade,
+    required: false,
+    description: 'Filter by card grade (optional)',
+  })
+  @ApiQuery({
+    name: 'sortGenre',
+    enum: CardGenre,
+    required: false,
+    description: 'Filter by card genre (optional)',
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    description: 'Page number (optional)',
+    example: '1',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: 'Number of items per page (optional)',
+    example: '10',
+  })
   async getMyCards(
     @GetUser() user: { userId: string },
     @Query('search') search?: string, // Optional
