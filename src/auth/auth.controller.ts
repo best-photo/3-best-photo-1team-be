@@ -25,6 +25,18 @@ export class AuthController {
     status: 201,
     description: '회원가입이 완료되었습니다.',
   })
+  @ApiResponse({
+    status: 409,
+    description: '이미 사용 중인 이메일입니다.',
+  })
+  @ApiResponse({
+    status: 409,
+    description: '이미 사용 중인 닉네임입니다.',
+  })
+  @ApiResponse({
+    status: 500,
+    description: '회원가입을 진행하는 중 오류가 발생했습니다.',
+  })
   @HttpCode(HttpStatus.CREATED)
   async signup(
     @Body() signupRequestDto: SignUpRequestDto,

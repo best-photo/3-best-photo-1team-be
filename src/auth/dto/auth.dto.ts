@@ -5,6 +5,7 @@ import { UserDto } from 'src/users/dto/user.dto';
 export class SignUpRequestDto extends OmitType(UserDto, [
   'id',
   'refreshToken',
+  'points',
 ]) {}
 
 // 회원가입 응답 DTO

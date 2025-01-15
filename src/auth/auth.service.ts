@@ -31,23 +31,14 @@ export class AuthService {
   // 회원가입
   async signup(dto: SignUpRequestDto) {
     // 이메일 중복 확인
-    const emailExists = await this.usersService.checkEmail({
+    await this.usersService.checkEmail({
       email: dto.email,
     });
 
-    // 이메일이 이미 존재하면 예외 발생
-    if (emailExists) {
-      throw new ConflictException('이미 사용 중인 이메일입니다.');
-    }
-
     // 닉네임 중복 확인
-    const nicknameExists = await this.usersService.checkNickname({
+    await this.usersService.checkNickname({
       nickname: dto.nickname,
     });
-
-    if (nicknameExists) {
-      throw new ConflictException('이미 사용 중인 닉네임입니다.');
-    }
 
     // 비밀번호 해시화
     const hashedPassword = await argon2.hash(dto.password);
