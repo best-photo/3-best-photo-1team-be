@@ -6,6 +6,7 @@ import {
   Patch,
   Param,
   Delete,
+  Query,
 } from '@nestjs/common';
 import { ShopService } from './shop.service';
 import { CreateShopDto } from './dto/create-shop.dto';
@@ -20,9 +21,17 @@ export class ShopController {
     return this.shopService.create(createShopDto);
   }
 
-  @Get()
-  findAll() {
-    return this.shopService.findAll();
+  @Get('cards')
+  async findAll(
+    @Query('query') query?: string,
+    @Query('grade') grade?: 'COMMON' | 'RARE' | 'SUPER_RARE' | 'LEGENDARY',
+    @Query('genre') genre?: 'TRAVEL' | 'LANDSCAPE' | 'PORTRAIT' | 'OBJECT',
+    @Query('status') status?: '판매 중' | '판매 완료',
+    @Query('priceOrder')
+    priceOrder?: '최신순' | '오래된 순' | '높은 가격순' | '낮은 가격순',
+  ) {
+    const filters = { query, grade, genre, status, priceOrder };
+    return await this.shopService.findAll(filters);
   }
 
   @Get(':id')
