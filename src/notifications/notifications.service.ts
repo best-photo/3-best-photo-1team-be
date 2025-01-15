@@ -44,9 +44,12 @@ export class NotificationsService {
     ]);
 
     // 읽지 않은 알림 개수 세기
-    const unreadNotificationsCount = notifications.filter(
-      (notification) => !notification.isRead,
-    ).length;
+    const unreadNotificationsCount = await this.prisma.notification.count({
+      where: {
+        userId,
+        isRead: false,
+      },
+    });
 
     // 반환할 알림 목록에서 필요한 정보만 추출
     const simplifiedNotifications = notifications.map(

@@ -3,9 +3,11 @@ import { createId } from '@paralleldrive/cuid2';
 import {
   IsBoolean,
   IsNotEmpty,
+  IsNumber,
   IsOptional,
   IsString,
   Length,
+  Min,
 } from 'class-validator';
 
 export class NotificationDto {
@@ -126,15 +128,19 @@ export class PaginationMetadataDto {
     description: '읽지 않은 알림 수',
     example: 5,
   })
+  @IsNumber()
+  @Min(0)
   unreadNotificationsCount: number;
 }
 
 export class NotificationSummaryDto {
   @ApiProperty({
-    description: '알림 ID',
-    example: 'cm5w28azo0001u0qg1l55s0mf',
+    nullable: false,
+    description: '알림 ID (CUID 자동 생성)',
+    example: createId(),
     type: String,
   })
+  @IsString()
   id: string;
 
   @ApiProperty({
@@ -187,10 +193,4 @@ export class UpdateNotificationResponseDto {
     example: true,
   })
   isRead: boolean;
-
-  @ApiProperty({
-    description: '수정된 날짜',
-    example: '2025-01-14T12:34:56.789Z',
-  })
-  updatedAt: Date;
 }
