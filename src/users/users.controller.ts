@@ -7,7 +7,6 @@ import {
   UseGuards,
   BadRequestException,
   InternalServerErrorException,
-  Req,
   Query,
 } from '@nestjs/common';
 import { UsersService } from './users.service';

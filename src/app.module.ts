@@ -21,8 +21,6 @@ import { PassportModule } from '@nestjs/passport';
     CardsModule,
     NotificationsModule,
     UsersModule,
-    NotificationsModule,
-    CardsModule,
     PointsModule,
   ],
   controllers: [AppController],
