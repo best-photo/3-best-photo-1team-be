@@ -38,6 +38,7 @@ export class UsersService {
         throw new BadRequestException('포인트 정보가 존재하지 않습니다.');
       }
       return {
+        id: user.id,
         email: user.email,
         nickname: user.nickname,
         points: user.point.balance,

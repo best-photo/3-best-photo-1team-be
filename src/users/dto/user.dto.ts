@@ -137,6 +137,7 @@ export class CheckNicknameResponseDto {
 }
 
 export class ProfileResponseDto extends PickType(UserDto, [
+  'id',
   'email',
   'nickname',
   'points',
