@@ -140,45 +140,46 @@ export class UsersService {
   }
 
   async createCard(userId: string, createCardDto: CreateCardDto) {
-    const { name, grade, genre, price, totalQuantity, description } =
-      createCardDto;
-
+    const { name, grade, genre, price, totalQuantity, description, imageUrl } = createCardDto;
+  
+    // 총 수량 검증
     if (totalQuantity <= 0) {
       throw new BadRequestException('총 수량은 0보다 커야 합니다.');
     }
-
+  
+    // 가격 검증
     if (price < 0) {
       throw new BadRequestException('가격은 0 이상이어야 합니다.');
     }
-
+  
     try {
       return await this.prisma.$transaction(async (tx) => {
+        // Prisma로 전달하기 전에 값을 숫자로 변환
         const newCard = await tx.card.create({
           data: {
             ownerId: userId,
             name,
             grade,
             genre,
-            price,
-            totalQuantity,
-            remainingQuantity: totalQuantity,
+            price: Number(price), // 문자열을 숫자로 변환
+            totalQuantity: Number(totalQuantity), // 문자열을 숫자로 변환
+            remainingQuantity: Number(totalQuantity), // 초기 값은 총 수량과 동일
+            imageUrl, // 이미지 URL 저장
             description,
           },
         });
-
+  
         return newCard;
       });
     } catch (error) {
+      console.error('Database error:', error); // DB 오류 로그 출력
       if (error instanceof PrismaClientKnownRequestError) {
-        throw new InternalServerErrorException(
-          '데이터베이스 작업 중 오류가 발생했습니다.',
-        );
+        throw new InternalServerErrorException('데이터베이스 작업 중 오류가 발생했습니다.');
       }
-      throw new InternalServerErrorException(
-        '포토카드 생성 중 오류가 발생했습니다.',
-      );
+      throw new InternalServerErrorException('포토카드 생성 중 오류가 발생했습니다.');
     }
   }
+  
 
   async getUserCards(
     userId: string,
@@ -229,6 +230,30 @@ export class UsersService {
       totalCount,
       totalPages: Math.ceil(totalCount / limit),
       currentPage: page,
+    };
+  }
+
+  async getCardById(cardId: string, userId: string) {
+    // 해당 카드와 그 카드의 소유자 정보를 함께 가져옴
+    const card = await this.prisma.card.findUnique({
+      where: { id: cardId },
+      include: {
+        owner: { // 'owner' 필드를 포함시켜서 User 테이블에서 nickname을 가져옵니다
+          select: {
+            nickname: true, // 'nickname'만 선택하여 불러옵니다
+          },
+        },
+      },
+    });
+
+    if (!card) {
+      throw new Error('Card not found');
+    }
+
+    // 카드 정보와 소유자 닉네임을 포함하여 반환
+    return {
+      ...card,
+      nickname: card.owner?.nickname,
     };
   }
 }
