@@ -4,6 +4,8 @@ import {
   Injectable,
   InternalServerErrorException,
   HttpStatus,
+  NotFoundException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import {
@@ -247,7 +249,11 @@ export class UsersService {
     });
 
     if (!card) {
-      throw new Error('Card not found');
+      throw new NotFoundException('카드를 찾을 수 없습니다');
+    }
+
+    if(card.ownerId !== userId){
+      throw new ForbiddenException('접근 권한이 없습니다.')
     }
 
     // 카드 정보와 소유자 닉네임을 포함하여 반환

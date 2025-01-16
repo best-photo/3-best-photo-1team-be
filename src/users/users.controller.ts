@@ -144,7 +144,18 @@ export class UsersController {
 
   @Post('my-cards')
   @UseGuards(AuthGuard)
-  @UseInterceptors(FileInterceptor('imageUrl', { dest: './uploads' })) // 파일 저장 위치 설정
+  @UseInterceptors(FileInterceptor('imageUrl', { 
+    dest: './uploads',
+    limits: {
+      fileSize: 5 * 1024 * 1024 //5MB
+    },
+    fileFilter: (req, file, cb) => {
+      if(!file.originalname.match(/\.(jpg|jpeg|png|gif)$/)){
+        return cb(new BadRequestException('지원하지 않는 파일 형식입니다'), false);
+      }
+      cb(null,true);
+    }
+  })) // 파일 저장 위치 설정
   @ApiOperation({
     summary: '포토카드 생성',
     description: '새로운 포토카드를 생성하고 이미지를 업로드합니다.',
@@ -190,15 +201,19 @@ export class UsersController {
     if (!imageUrl) {
       throw new BadRequestException('이미지 파일이 필요합니다.');
     }
+    
+    try{
+      // Multer에서 저장한 파일 경로 가져오기
+      const imageUrlPath = imageUrl.path;
 
-    // Multer에서 저장한 파일 경로 가져오기
-    const imageUrlPath = imageUrl.path;
+      // DTO에 이미지 URL 추가
+      createCardDto.imageUrl = imageUrlPath;
 
-    // DTO에 이미지 URL 추가
-    createCardDto.imageUrl = imageUrlPath;
-
-    // 카드 생성 서비스 호출
-    return this.usersService.createCard(user.userId, createCardDto);
+      // 카드 생성 서비스 호출
+      return this.usersService.createCard(user.userId, createCardDto);
+    } catch(error){
+      throw new InternalServerErrorException('파일 업로드 중 오류가 발생했습니다.')
+    }
   }
   
   @Get('my-cards')
