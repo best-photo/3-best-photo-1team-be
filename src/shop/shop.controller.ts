@@ -34,6 +34,28 @@ export class ShopController {
     return await this.shopService.findAll(filters);
   }
 
+  @Get('/cards/:id')
+  async findUserCards(
+    @Param('id') userId: string,
+    @Query('query') query?: string,
+    @Query('grade') grade?: 'COMMON' | 'RARE' | 'SUPER_RARE' | 'LEGENDARY',
+    @Query('genre') genre?: 'TRAVEL' | 'LANDSCAPE' | 'PORTRAIT' | 'OBJECT',
+  ) {
+    const filters = { query, grade, genre };
+    return await this.shopService.findUserCards(userId, filters);
+  }
+
+  // @Get('/user/:id')
+  // async findUserCards(
+  //   @Param('id') userId: string,
+  //   @Query('query') query?: string,
+  //   @Query('grade') grade?: 'COMMON' | 'RARE' | 'SUPER RARE' | 'LEGENDARY',
+  //   @Query('genre') genre?: 'TRAVEL' | 'LANDSCAPE' | 'PORTRAIT' | 'OBJECT',
+  // ) {
+  //   const filters = { query, grade, genre };
+  //   return await this.shopService.findUserCards(userId, filters);
+  // }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.shopService.findOne(+id);

@@ -189,23 +189,24 @@ export class UsersService {
     limit: number = 10,
   ) {
     const skip = (page - 1) * limit;
-  
+
     const where: Prisma.CardWhereInput = {
       ownerId: userId,
       ...(search && { name: { contains: search, mode: 'insensitive' } }),
       ...(sortGrade && { grade: sortGrade }),
       ...(sortGenre && { genre: sortGenre }),
     };
-  
+
     console.log('WHERE CONDITIONS:', where); // 조건 확인
-  
+
     const [cards, totalCount] = await Promise.all([
       this.prisma.card.findMany({
         where,
         skip,
         take: limit,
         include: {
-          owner: { // 'owner' 필드를 포함시켜서 User 테이블에서 nickname을 가져옵니다
+          owner: {
+            // 'owner' 필드를 포함시켜서 User 테이블에서 nickname을 가져옵니다
             select: {
               nickname: true, // 'nickname'만 선택하여 불러옵니다
             },
@@ -216,13 +217,13 @@ export class UsersService {
         where,
       }),
     ]);
-  
+
     // 카드를 반환하면서, `nickname`을 각 카드에 포함시켜줍니다
-    const cardsWithNickname = cards.map(card => ({
+    const cardsWithNickname = cards.map((card) => ({
       ...card,
       nickname: card.owner?.nickname, // 'nickname'을 카드 데이터에 추가
     }));
-  
+
     return {
       cards: cardsWithNickname,
       totalCount,
@@ -230,5 +231,4 @@ export class UsersService {
       currentPage: page,
     };
   }
-  
 }
