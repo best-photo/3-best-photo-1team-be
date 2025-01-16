@@ -24,5 +24,5 @@ export class CreateCardDto {
   description: string;
 
   @IsString()
-  imageUrl: string; // 이미지 URL을 선택적으로 받음
+  imageUrl: string; 
 }
