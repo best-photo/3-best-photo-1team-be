@@ -22,4 +22,7 @@ export class CreateCardDto {
 
   @IsString()
   description: string;
+
+  @IsString()
+  imageUrl: string; 
 }

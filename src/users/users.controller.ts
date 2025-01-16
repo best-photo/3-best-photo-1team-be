@@ -8,16 +8,21 @@ import {
   BadRequestException,
   InternalServerErrorException,
   Query,
+  Param,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CheckEmailRequestDto, CheckNicknameRequestDto } from './dto/user.dto';
 import { AuthGuard } from 'src/auth/auth.guard';
 import { AuthService } from 'src/auth/auth.service';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
-import { ApiQuery, ApiResponse } from '@nestjs/swagger';
+import { ApiBody, ApiConsumes, ApiOperation, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import { GetUser } from 'src/auth/decorators/get-user.decorator';
 import { CreateCardDto } from 'src/cards/dto/create-card.dto';
 import { CardGenre, CardGrade } from '@prisma/client';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { Express } from 'express';
 
 @Controller('users')
 export class UsersController {
@@ -139,6 +144,42 @@ export class UsersController {
 
   @Post('my-cards')
   @UseGuards(AuthGuard)
+  @UseInterceptors(FileInterceptor('imageUrl', { 
+    dest: './uploads',
+    limits: {
+      fileSize: 5 * 1024 * 1024 //5MB
+    },
+    fileFilter: (req, file, cb) => {
+      if(!file.originalname.match(/\.(jpg|jpeg|png|gif)$/)){
+        return cb(new BadRequestException('지원하지 않는 파일 형식입니다'), false);
+      }
+      cb(null,true);
+    }
+  })) // 파일 저장 위치 설정
+  @ApiOperation({
+    summary: '포토카드 생성',
+    description: '새로운 포토카드를 생성하고 이미지를 업로드합니다.',
+  })
+  @ApiConsumes('multipart/form-data') // 파일 업로드 지원
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['imageUrl', 'name', 'grade', 'genre', 'price', 'totalQuantity', 'description'], // 필수 필드 설정
+      properties: {
+        imageUrl: {
+          type: 'string',
+          format: 'binary',
+          description: '이미지 파일 (필수)',
+        },
+        name: { type: 'string', description: '카드 이름 (필수)' },
+        grade: { type: 'string', enum: ['COMMON', 'RARE', 'SUPER_RARE', 'LEGENDARY'], description: '카드 등급 (필수)' },
+        genre: { type: 'string', enum: ['TRAVEL', 'LANDSCAPE', 'PORTRAIT', 'OBJECT'], description: '카드 장르 (필수)' },
+        price: { type: 'integer', minimum: 1, description: '카드 가격 (필수)' },
+        totalQuantity: { type: 'integer', minimum: 1, description: '총 수량 (필수)' },
+        description: { type: 'string', description: '카드 설명 (필수)' },
+      },
+    },
+  })
   @ApiResponse({
     status: 201,
     description: '포토카드 생성 성공',
@@ -152,23 +193,29 @@ export class UsersController {
     description: '인증 정보가 존재하지 않습니다.',
   })
   async createCard(
-    @Body() createCardDto: CreateCardDto,
-    @GetUser() user: { userId: string }, // GetUser 데코레이터로 유저 정보 가져오기
+    @UploadedFile() imageUrl: Express.Multer.File, // 업로드된 파일 객체
+    @Body() createCardDto: CreateCardDto, // 나머지 폼 데이터
+    @GetUser() user: { userId: string }, // 사용자 정보
   ) {
-    try {
+    // 이미지 파일 검증
+    if (!imageUrl) {
+      throw new BadRequestException('이미지 파일이 필요합니다.');
+    }
+    
+    try{
+      // Multer에서 저장한 파일 경로 가져오기
+      const imageUrlPath = imageUrl.path;
+
+      // DTO에 이미지 URL 추가
+      createCardDto.imageUrl = imageUrlPath;
+
+      // 카드 생성 서비스 호출
       return this.usersService.createCard(user.userId, createCardDto);
-    } catch (error) {
-      if (error instanceof PrismaClientKnownRequestError) {
-        throw new InternalServerErrorException(
-          '데이터베이스 작업 중 오류가 발생했습니다.',
-        );
-      }
-      throw new InternalServerErrorException(
-        '포토카드 생성 중 오류가 발생했습니다.',
-      );
+    } catch(error){
+      throw new InternalServerErrorException('파일 업로드 중 오류가 발생했습니다.')
     }
   }
-
+  
   @Get('my-cards')
   @UseGuards(AuthGuard)
   @ApiQuery({
@@ -220,4 +267,23 @@ export class UsersController {
       limitNum,
     );
   }
+
+  @Get('my-cards/:id')
+  @UseGuards(AuthGuard)  // 인증된 사용자만 접근할 수 있도록
+  @ApiOperation({
+    summary: 'Get card details by card ID',
+    description: 'Fetch a card by its ID along with the owner\'s nickname',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Card details fetched successfully',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Card not found',
+  })
+  async getCardById(@Param('id') id: string, @GetUser() user: { userId: string }) {
+    return this.usersService.getCardById(id, user.userId);
+  }
 }
+
