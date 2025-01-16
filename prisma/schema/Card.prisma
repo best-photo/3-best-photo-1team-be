@@ -19,7 +19,7 @@ model Card {
   ownerId          String   /// 카드 소유자(User과 Card는 1:N 관계)
   name             String   @db.VarChar(100) /// 카드 이름 길이 제한(100자)
   price            Int      /// 카드에 부여되어 있는 포인트 가격
-
+  imageUrl         String   @db.Text /// 카드 이미지 URL
 
   grade            CardGrade  /// 카드 등급(common, rare, super rare, legendary)
   genre            CardGenre  /// 카드 장르(예: 여행, 풍경, 인물, 사물 등)
