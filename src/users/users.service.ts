@@ -142,18 +142,19 @@ export class UsersService {
   }
 
   async createCard(userId: string, createCardDto: CreateCardDto) {
-    const { name, grade, genre, price, totalQuantity, description, imageUrl } = createCardDto;
-  
+    const { name, grade, genre, price, totalQuantity, description, imageUrl } =
+      createCardDto;
+
     // 총 수량 검증
     if (totalQuantity <= 0) {
       throw new BadRequestException('총 수량은 0보다 커야 합니다.');
     }
-  
+
     // 가격 검증
     if (price < 0) {
       throw new BadRequestException('가격은 0 이상이어야 합니다.');
     }
-  
+
     try {
       return await this.prisma.$transaction(async (tx) => {
         // Prisma로 전달하기 전에 값을 숫자로 변환
@@ -170,18 +171,21 @@ export class UsersService {
             description,
           },
         });
-  
+
         return newCard;
       });
     } catch (error) {
       console.error('Database error:', error); // DB 오류 로그 출력
       if (error instanceof PrismaClientKnownRequestError) {
-        throw new InternalServerErrorException('데이터베이스 작업 중 오류가 발생했습니다.');
+        throw new InternalServerErrorException(
+          '데이터베이스 작업 중 오류가 발생했습니다.',
+        );
       }
-      throw new InternalServerErrorException('포토카드 생성 중 오류가 발생했습니다.');
+      throw new InternalServerErrorException(
+        '포토카드 생성 중 오류가 발생했습니다.',
+      );
     }
   }
-  
 
   async getUserCards(
     userId: string,
@@ -240,7 +244,8 @@ export class UsersService {
     const card = await this.prisma.card.findUnique({
       where: { id: cardId },
       include: {
-        owner: { // 'owner' 필드를 포함시켜서 User 테이블에서 nickname을 가져옵니다
+        owner: {
+          // 'owner' 필드를 포함시켜서 User 테이블에서 nickname을 가져옵니다
           select: {
             nickname: true, // 'nickname'만 선택하여 불러옵니다
           },
@@ -252,8 +257,8 @@ export class UsersService {
       throw new NotFoundException('카드를 찾을 수 없습니다');
     }
 
-    if(card.ownerId !== userId){
-      throw new ForbiddenException('접근 권한이 없습니다.')
+    if (card.ownerId !== userId) {
+      throw new ForbiddenException('접근 권한이 없습니다.');
     }
 
     // 카드 정보와 소유자 닉네임을 포함하여 반환

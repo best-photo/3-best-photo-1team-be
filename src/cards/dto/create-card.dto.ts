@@ -24,5 +24,5 @@ export class CreateCardDto {
   description: string;
 
   @IsString()
-  imageUrl: string; 
+  imageUrl: string;
 }
