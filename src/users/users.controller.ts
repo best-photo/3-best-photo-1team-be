@@ -153,25 +153,6 @@ export class UsersController {
 
   @Post('my-cards')
   @UseGuards(AuthGuard)
-<<<<<<< HEAD
-  @UseInterceptors(
-    FileInterceptor('imageUrl', {
-      dest: './uploads',
-      limits: {
-        fileSize: 5 * 1024 * 1024, //5MB
-      },
-      fileFilter: (req, file, cb) => {
-        if (!file.originalname.match(/\.(jpg|jpeg|png|gif)$/)) {
-          return cb(
-            new BadRequestException('지원하지 않는 파일 형식입니다'),
-            false,
-          );
-        }
-        cb(null, true);
-      },
-    }),
-  ) // 파일 저장 위치 설정
-=======
   @UseInterceptors(FileInterceptor('imageUrl', { 
     storage: diskStorage({
       destination: (req, file, cb) => {
@@ -198,7 +179,6 @@ export class UsersController {
       fileSize: 5 * 1024 * 1024, // 5MB
     },
   }))
->>>>>>> 231f79d001a3604399f24a3614baaef8278f05d7
   @ApiOperation({
     summary: '포토카드 생성',
     description: '새로운 포토카드를 생성하고 이미지를 업로드합니다.',
