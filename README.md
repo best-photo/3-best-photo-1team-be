@@ -164,5 +164,5 @@ $ npm run start:prod
 
 ```bash
 $ npm run start:dev
-# 실행 후 http://localhost:8000/api 접속
+# 실행 후 http://localhost:8080/api 접속
 ```

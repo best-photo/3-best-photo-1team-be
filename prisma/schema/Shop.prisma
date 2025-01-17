@@ -1,8 +1,15 @@
 model Shop {
+<<<<<<< HEAD
   id                  String    @id @default(cuid())
   sellerId            String /// 판매자의 id(판매자[User]와 상점[Shop]은 1:N 관계)
   cardId              String    @unique /// 판매할 카드의 id(카드[Card]와 상점[Shop]은 1:1 관계)
   price               Int /// 판매 가격
+=======
+  id       String @id @default(cuid())
+  sellerId String /// 판매자의 id(판매자[User]와 상점[Shop]은 1:N 관계)
+  cardId   String @unique /// 판매할 카드의 id(카드[Card]와 상점[Shop]은 1:1 관계)
+  price    Int  /// 판매 가격
+>>>>>>> 231f79d001a3604399f24a3614baaef8278f05d7
   quantity            Int @default(0) /// 판매자가 판매하려는 수량 (기본값 0)
   exchangeGrade       CardGrade @default(COMMON) /// 교환 희망 등급 (기본값 COMMON)
   exchangeGenre       CardGenre @default(TRAVEL) /// 교환 희망 장르 (기본값 TRAVEL)
