@@ -275,12 +275,16 @@ export class UsersService {
     });
 
     if (!user) {
-      throw new Error('사용자를 찾을 수 없습니다.');
+      throw new NotFoundException('사용자를 찾을 수 없습니다.');
     }
 
     // 사용자가 가진 모든 카드 조회
-    const cards: Card[] = await this.prisma.card.findMany({
+    const cardCounts = await this.prisma.card.groupBy({
+      by: ['grade'],
       where: { ownerId: userId },
+      _count: {
+        grade: true
+      }
     });
 
     // 각 등급별 카운트 초기화
@@ -290,7 +294,7 @@ export class UsersService {
     let legendary = 0;
 
     // 카드의 등급별 개수 계산
-    cards.forEach((card) => {
+    cardCounts.forEach((card) => {
       switch (card.grade.toUpperCase()) {
         case 'COMMON':
           common++;
