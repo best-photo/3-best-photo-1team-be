@@ -23,6 +23,9 @@ import { CreateCardDto } from 'src/cards/dto/create-card.dto';
 import { CardGenre, CardGrade } from '@prisma/client';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Express } from 'express';
+import { diskStorage } from 'multer';
+import { extname } from 'path';
+import { existsSync, mkdir, mkdirSync } from 'fs';
 
 @Controller('users')
 export class UsersController {
@@ -145,17 +148,31 @@ export class UsersController {
   @Post('my-cards')
   @UseGuards(AuthGuard)
   @UseInterceptors(FileInterceptor('imageUrl', { 
-    dest: './uploads',
+    storage: diskStorage({
+      destination: (req, file, cb) => {
+        const uploadDir = './uploads';
+        // uploads 디렉토리가 없으면 생성
+        if(!existsSync(uploadDir)){
+          mkdirSync(uploadDir, {recursive : true});
+        }
+        cb(null, uploadDir);
+      },
+      filename: (req, file, callback) => {
+        // 현재 시간을 파일 이름에 포함시켜 고유하게 만들기
+        const timestamp = Date.now();
+        //파일 확장자 보안 검사
+        const fileExtension = extname(file.originalname).toLowerCase();
+        if(!['.jpg', '.jpeg', '.png'].includes(fileExtension)){
+          return callback(new BadRequestException('지원하지 않는 파일 형식입니다'), null);
+        }
+        const newFileName = `${timestamp}-${Math.random().toString(36).substring(7)}${fileExtension}`; // timestamp + 확장자
+        callback(null, newFileName); // 새로운 파일 이름 저장
+      },
+    }),
     limits: {
-      fileSize: 5 * 1024 * 1024 //5MB
+      fileSize: 5 * 1024 * 1024, // 5MB
     },
-    fileFilter: (req, file, cb) => {
-      if(!file.originalname.match(/\.(jpg|jpeg|png|gif)$/)){
-        return cb(new BadRequestException('지원하지 않는 파일 형식입니다'), false);
-      }
-      cb(null,true);
-    }
-  })) // 파일 저장 위치 설정
+  }))
   @ApiOperation({
     summary: '포토카드 생성',
     description: '새로운 포토카드를 생성하고 이미지를 업로드합니다.',
