@@ -165,7 +165,7 @@ export class UsersController {
         if(!['.jpg', '.jpeg', '.png'].includes(fileExtension)){
           return callback(new BadRequestException('지원하지 않는 파일 형식입니다'), null);
         }
-        const newFileName = `${timestamp}${fileExtension}`; // timestamp + 확장자
+        const newFileName = `${timestamp}-${Math.random().toString(36).substring(7)}${fileExtension}`; // timestamp + 확장자
         callback(null, newFileName); // 새로운 파일 이름 저장
       },
     }),
