@@ -9,6 +9,7 @@ import { CardsModule } from './cards/cards.module';
 import { PointsModule } from './points/points.module';
 import { ConfigModule } from '@nestjs/config';
 import { PassportModule } from '@nestjs/passport';
+import { ImageController } from './image/image.controller';
 
 @Module({
   imports: [
@@ -23,7 +24,7 @@ import { PassportModule } from '@nestjs/passport';
     UsersModule,
     PointsModule,
   ],
-  controllers: [AppController],
+  controllers: [AppController, ImageController],
   providers: [AppService],
 })
 export class AppModule {}
