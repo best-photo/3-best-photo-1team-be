@@ -16,7 +16,7 @@ import {
 } from './dto/user.dto';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { CreateCardDto } from 'src/cards/dto/create-card.dto';
-import { CardGenre, CardGrade, Prisma } from '@prisma/client';
+import { Card, CardGenre, CardGrade, Prisma, User } from '@prisma/client';
 
 @Injectable()
 export class UsersService {
@@ -265,6 +265,59 @@ export class UsersService {
     return {
       ...card,
       nickname: card.owner?.nickname,
+    };
+  }
+
+  async getUserPhotoCardInfo(userId: string) {
+    // 사용자 정보를 가져오기 (닉네임 포함)
+    const user: User | null = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new NotFoundException('사용자를 찾을 수 없습니다.');
+    }
+
+    // 사용자가 가진 모든 카드 조회
+    const cardCounts = await this.prisma.card.groupBy({
+      by: ['grade'],
+      where: { ownerId: userId },
+      _count: {
+        grade: true,
+      }
+    });
+
+    // 각 등급별 카운트 초기화
+    let common = 0;
+    let rare = 0;
+    let superRare = 0;
+    let legendary = 0;
+
+    // 카드의 등급별 개수 계산
+    cardCounts.forEach((card) => {
+      switch (card.grade.toUpperCase()) {
+        case 'COMMON':
+          common++;
+          break;
+        case 'RARE':
+          rare++;
+          break;
+        case 'SUPER_RARE':
+          superRare++;
+          break;
+        case 'LEGENDARY':
+          legendary++;
+          break;
+      }
+    });
+
+    // 반환할 데이터 객체 생성
+    return {
+      nickname: user.nickname, // 사용자 닉네임 반환
+      common,
+      rare,
+      superRare,
+      legendary,
     };
   }
 }

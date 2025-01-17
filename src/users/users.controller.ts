@@ -335,4 +335,11 @@ export class UsersController {
     // 유저 아이디와 카드 아이디가 모두 받아졌으므로, 서비스로 전달하여 카드 정보를 조회합니다.
     return this.usersService.getCardById(cardId, userId); // userId와 cardId 모두 전달
   }
+
+  @Get('card-info')
+  @UseGuards(AuthGuard) // JWT 인증 가드 (필요한 경우)
+  async getUserPhotoCardInfo(@GetUser() user: { userId: string }) {
+    const { userId } = user;
+    return this.usersService.getUserPhotoCardInfo(userId);
+  }
 }
