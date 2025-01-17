@@ -19,7 +19,7 @@ async function bootstrap() {
     origin: [
       'http://localhost:3000',
       'https://best-photo-kappa.vercel.app',
-      'https://ooyoo.dev',
+      'https://*.ooyoo.dev',
     ],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
