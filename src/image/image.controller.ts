@@ -29,7 +29,11 @@ export class ImageController {
       await fs.promises.access(imagePath);
       return res.sendFile(imagePath);
     } catch(error){
-      return res.status(404).send('Image not found');
+      console.error(`이미지 접근 오류: ${error.message}`);
+      if(error.code === 'ENOENT'){
+        return res.status(404).send('이미지를 찾을 수 없습니다');
+      }
+      return res.status(500).send('이미지 처리 중 오류가 발생했습니다.');
     }
   }
 }

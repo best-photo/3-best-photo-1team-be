@@ -155,13 +155,14 @@ export class UsersController {
         if(!existsSync(uploadDir)){
           mkdirSync(uploadDir, {recursive : true});
         }
+        cb(null, uploadDir);
       },
       filename: (req, file, callback) => {
         // 현재 시간을 파일 이름에 포함시켜 고유하게 만들기
         const timestamp = Date.now();
         //파일 확장자 보안 검사
         const fileExtension = extname(file.originalname).toLowerCase();
-        if(!['.jpg', 'jpeg', '.png'].includes(fileExtension)){
+        if(!['.jpg', '.jpeg', '.png'].includes(fileExtension)){
           return callback(new BadRequestException('지원하지 않는 파일 형식입니다'), null);
         }
         const newFileName = `${timestamp}${fileExtension}`; // timestamp + 확장자
@@ -170,12 +171,6 @@ export class UsersController {
     }),
     limits: {
       fileSize: 5 * 1024 * 1024, // 5MB
-    },
-    fileFilter: (req, file, cb) => {
-      if (!file.originalname.match(/\.(jpg|jpeg|png)$/)) {
-        return cb(new BadRequestException('지원하지 않는 파일 형식입니다'), false);
-      }
-      cb(null, true);
     },
   }))
   @ApiOperation({
