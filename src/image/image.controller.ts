@@ -12,10 +12,16 @@ export class ImageController {
   @Get(':imageName')
   async getImage(@Param('imageName') imageName: string, @Res() res: Response) {
     // 경로 주입 방지를 위한 검증
-    if(imageName.includes('..') || imageName.includes('/')){
+    const VALID_IMAGE_REGEX = /^[a-zA-Z0-9-_]+\.(jpg|jpeg|png)$/;
+    if (!VALID_IMAGE_REGEX.test(imageName)) {
       return res.status(400).send('Invalid image name');
     }
     const imagePath = path.resolve(process.cwd(), 'uploads', imageName); // 경로 설정
+    const mimeType = mime.lookup(imagePath);
+
+    if (!mimeType || !ALLOWED_MIME_TYPES.includes(mimeType)){
+      return res.status(400).send('Invalid file type');
+    }
 
     console.log('Requested Image Path:', imagePath); // 경로 확인
 

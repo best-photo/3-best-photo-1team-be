@@ -25,6 +25,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { Express } from 'express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
+import { existsSync, mkdir, mkdirSync } from 'fs';
 
 @Controller('users')
 export class UsersController {
@@ -148,11 +149,21 @@ export class UsersController {
   @UseGuards(AuthGuard)
   @UseInterceptors(FileInterceptor('imageUrl', { 
     storage: diskStorage({
-      destination: './uploads', // 업로드 경로
+      destination: (req, file, cb) => {
+        const uploadDir = './uploads';
+        // uploads 디렉토리가 없으면 생성
+        if(!existsSync(uploadDir)){
+          mkdirSync(uploadDir, {recursive : true});
+        }
+      },
       filename: (req, file, callback) => {
         // 현재 시간을 파일 이름에 포함시켜 고유하게 만들기
         const timestamp = Date.now();
-        const fileExtension = extname(file.originalname); // 파일 확장자 추출
+        //파일 확장자 보안 검사
+        const fileExtension = extname(file.originalname).toLowerCase();
+        if(!['.jpg', 'jpeg', '.png'].includes(fileExtension)){
+          return callback(new BadRequestException('지원하지 않는 파일 형식입니다'), null);
+        }
         const newFileName = `${timestamp}${fileExtension}`; // timestamp + 확장자
         callback(null, newFileName); // 새로운 파일 이름 저장
       },
