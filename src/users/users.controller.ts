@@ -17,7 +17,13 @@ import { CheckEmailRequestDto, CheckNicknameRequestDto } from './dto/user.dto';
 import { AuthGuard } from 'src/auth/auth.guard';
 import { AuthService } from 'src/auth/auth.service';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
-import { ApiBody, ApiConsumes, ApiOperation, ApiQuery, ApiResponse } from '@nestjs/swagger';
+import {
+  ApiBody,
+  ApiConsumes,
+  ApiOperation,
+  ApiQuery,
+  ApiResponse,
+} from '@nestjs/swagger';
 import { GetUser } from 'src/auth/decorators/get-user.decorator';
 import { CreateCardDto } from 'src/cards/dto/create-card.dto';
 import { CardGenre, CardGrade } from '@prisma/client';
@@ -147,6 +153,25 @@ export class UsersController {
 
   @Post('my-cards')
   @UseGuards(AuthGuard)
+<<<<<<< HEAD
+  @UseInterceptors(
+    FileInterceptor('imageUrl', {
+      dest: './uploads',
+      limits: {
+        fileSize: 5 * 1024 * 1024, //5MB
+      },
+      fileFilter: (req, file, cb) => {
+        if (!file.originalname.match(/\.(jpg|jpeg|png|gif)$/)) {
+          return cb(
+            new BadRequestException('지원하지 않는 파일 형식입니다'),
+            false,
+          );
+        }
+        cb(null, true);
+      },
+    }),
+  ) // 파일 저장 위치 설정
+=======
   @UseInterceptors(FileInterceptor('imageUrl', { 
     storage: diskStorage({
       destination: (req, file, cb) => {
@@ -173,6 +198,7 @@ export class UsersController {
       fileSize: 5 * 1024 * 1024, // 5MB
     },
   }))
+>>>>>>> 231f79d001a3604399f24a3614baaef8278f05d7
   @ApiOperation({
     summary: '포토카드 생성',
     description: '새로운 포토카드를 생성하고 이미지를 업로드합니다.',
@@ -181,7 +207,15 @@ export class UsersController {
   @ApiBody({
     schema: {
       type: 'object',
-      required: ['imageUrl', 'name', 'grade', 'genre', 'price', 'totalQuantity', 'description'], // 필수 필드 설정
+      required: [
+        'imageUrl',
+        'name',
+        'grade',
+        'genre',
+        'price',
+        'totalQuantity',
+        'description',
+      ], // 필수 필드 설정
       properties: {
         imageUrl: {
           type: 'string',
@@ -189,10 +223,22 @@ export class UsersController {
           description: '이미지 파일 (필수)',
         },
         name: { type: 'string', description: '카드 이름 (필수)' },
-        grade: { type: 'string', enum: ['COMMON', 'RARE', 'SUPER_RARE', 'LEGENDARY'], description: '카드 등급 (필수)' },
-        genre: { type: 'string', enum: ['TRAVEL', 'LANDSCAPE', 'PORTRAIT', 'OBJECT'], description: '카드 장르 (필수)' },
+        grade: {
+          type: 'string',
+          enum: ['COMMON', 'RARE', 'SUPER_RARE', 'LEGENDARY'],
+          description: '카드 등급 (필수)',
+        },
+        genre: {
+          type: 'string',
+          enum: ['TRAVEL', 'LANDSCAPE', 'PORTRAIT', 'OBJECT'],
+          description: '카드 장르 (필수)',
+        },
         price: { type: 'integer', minimum: 1, description: '카드 가격 (필수)' },
-        totalQuantity: { type: 'integer', minimum: 1, description: '총 수량 (필수)' },
+        totalQuantity: {
+          type: 'integer',
+          minimum: 1,
+          description: '총 수량 (필수)',
+        },
         description: { type: 'string', description: '카드 설명 (필수)' },
       },
     },
@@ -218,8 +264,8 @@ export class UsersController {
     if (!imageUrl) {
       throw new BadRequestException('이미지 파일이 필요합니다.');
     }
-    
-    try{
+
+    try {
       // Multer에서 저장한 파일 경로 가져오기
       const imageUrlPath = imageUrl.path;
 
@@ -228,11 +274,13 @@ export class UsersController {
 
       // 카드 생성 서비스 호출
       return this.usersService.createCard(user.userId, createCardDto);
-    } catch(error){
-      throw new InternalServerErrorException('파일 업로드 중 오류가 발생했습니다.')
+    } catch (error) {
+      throw new InternalServerErrorException(
+        '파일 업로드 중 오류가 발생했습니다.',
+      );
     }
   }
-  
+
   @Get('my-cards')
   @UseGuards(AuthGuard)
   @ApiQuery({
@@ -286,10 +334,10 @@ export class UsersController {
   }
 
   @Get('my-cards/:id')
-  @UseGuards(AuthGuard)  // 인증된 사용자만 접근할 수 있도록
+  @UseGuards(AuthGuard) // 인증된 사용자만 접근할 수 있도록
   @ApiOperation({
     summary: 'Get card details by card ID',
-    description: 'Fetch a card by its ID along with the owner\'s nickname',
+    description: "Fetch a card by its ID along with the owner's nickname",
   })
   @ApiResponse({
     status: 200,
@@ -299,8 +347,10 @@ export class UsersController {
     status: 404,
     description: 'Card not found',
   })
-  async getCardById(@Param('id') id: string, @GetUser() user: { userId: string }) {
+  async getCardById(
+    @Param('id') id: string,
+    @GetUser() user: { userId: string },
+  ) {
     return this.usersService.getCardById(id, user.userId);
   }
 }
-

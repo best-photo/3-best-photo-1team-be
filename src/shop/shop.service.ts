@@ -9,8 +9,48 @@ import { CardGrade, CardGenre } from '@prisma/client';
 export class ShopService {
   constructor(private readonly prisma: PrismaService) {}
 
-  create(createShopDto: CreateShopDto) {
-    return 'This action adds a new shop';
+  async create(createShopDto: CreateShopDto) {
+    const genreMap: Record<string, CardGenre> = {
+      여행: CardGenre.TRAVEL,
+      풍경: CardGenre.LANDSCAPE,
+      인물: CardGenre.PORTRAIT,
+      사물: CardGenre.OBJECT,
+    };
+
+    const gradeMap: Record<string, CardGrade> = {
+      COMMON: CardGrade.COMMON,
+      RARE: CardGrade.RARE,
+      superRare: CardGrade.SUPER_RARE,
+      LEGENDARY: CardGrade.LEGENDARY,
+    };
+
+    try {
+      const shopEntry = await this.prisma.shop.create({
+        data: {
+          sellerId: createShopDto.sellerId,
+          cardId: createShopDto.cardId,
+          price: createShopDto.price,
+          quantity: createShopDto.quantity,
+          exchangeGrade: gradeMap[createShopDto.exchangeGrade],
+          exchangeGenre: genreMap[createShopDto.exchangeGenre],
+          exchangeDescription: createShopDto.exchangeDescription || null,
+        },
+      });
+
+      await this.prisma.card.update({
+        where: { id: createShopDto.cardId },
+        data: {
+          remainingQuantity: {
+            decrement: createShopDto.quantity,
+          },
+        },
+      });
+
+      return shopEntry;
+    } catch (error) {
+      console.error('판매 등록 중 오류 발생:', error);
+      throw new Error('판매 등록에 실패했습니다.');
+    }
   }
 
   async findAll(filters: {
@@ -18,7 +58,7 @@ export class ShopService {
     grade?: string;
     genre?: string;
     status?: string;
-    priceOrder?: string;
+    placeOrder?: string;
   }): Promise<Card[]> {
     const gradeMap: Record<string, CardGrade> = {
       common: CardGrade.COMMON,
@@ -34,33 +74,26 @@ export class ShopService {
       object: CardGenre.OBJECT,
     };
 
-    const { query, grade, genre, status, priceOrder } = filters;
-    console.log('Filters:', {
-      query,
-      grade: grade ? gradeMap[grade] : undefined,
-      genre: genre ? genreMap[genre] : undefined,
-    });
-    // 상태 필터링
+    const { query, grade, genre, status, placeOrder } = filters;
     const statusFilter =
-      status === '판매 중'
-        ? { remainingQuantity: { gt: 0 } }
-        : status === '판매 완료'
-          ? { remainingQuantity: 0 }
+      status === 'IN_STOCK'
+        ? { shop: { quantity: { gt: 0 } } }
+        : status === 'OUT_OF_STOCK'
+          ? { shop: { quantity: 0 } }
           : {};
 
-    // 정렬 기준 변환
     const orderBy =
-      priceOrder === '높은 가격순'
-        ? { price: 'desc' as const }
-        : priceOrder === '낮은 가격순'
-          ? { price: 'asc' as const }
-          : priceOrder === '최신순'
-            ? { createdAt: 'desc' as const }
-            : priceOrder === '오래된 순'
-              ? { createdAt: 'asc' as const }
+      placeOrder === '높은 가격순'
+        ? { shop: { price: 'desc' as const } }
+        : placeOrder === '낮은 가격순'
+          ? { shop: { price: 'asc' as const } }
+          : placeOrder === '최신순'
+            ? { shop: { createdAt: 'desc' as const } }
+            : placeOrder === '오래된 순'
+              ? { shop: { createdAt: 'asc' as const } }
               : undefined;
 
-    return await this.prisma.card.findMany({
+    const cards = await this.prisma.card.findMany({
       where: {
         shop: {
           isNot: null,
@@ -70,8 +103,18 @@ export class ShopService {
         genre: genre ? genreMap[genre] : undefined,
         ...statusFilter,
       },
+      include: {
+        shop: true,
+      },
       orderBy: orderBy ? [orderBy] : undefined,
     });
+
+    return cards.map((card) => ({
+      ...card,
+      quantity: card.shop?.quantity || null,
+      createdAt: card.shop?.createdAt || card.createdAt,
+      remainingQuantity: undefined,
+    }));
   }
 
   async findUserCards(
@@ -107,6 +150,15 @@ export class ShopService {
         shop: {
           is: null,
         },
+      },
+    });
+  }
+
+  async findCardByUserAndId(userId: string, cardId: string) {
+    return this.prisma.card.findFirst({
+      where: {
+        id: cardId,
+        ownerId: userId,
       },
     });
   }
