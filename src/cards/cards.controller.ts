@@ -33,6 +33,11 @@ export class CardsController {
     return this.cardsService.getCardByIdWithoutAuth(id);
   }
 
+  @Get('user/:userId')
+  async getUserPhotoCardInfo(@Param('userId') userId: string) {
+    return this.cardsService.getUserPhotoCardInfo(userId);
+  }
+
   @Post()
   create(@Body() createCardDto: CreateCardDto) {
     return this.cardsService.create(createCardDto);
