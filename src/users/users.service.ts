@@ -283,7 +283,7 @@ export class UsersService {
       by: ['grade'],
       where: { ownerId: userId },
       _count: {
-        grade: true
+        grade: true,
       }
     });
 
