@@ -31,7 +31,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { Express } from 'express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
-import { existsSync, mkdir, mkdirSync } from 'fs';
+import { existsSync, mkdirSync } from 'fs';
 
 @Controller('users')
 export class UsersController {
@@ -313,7 +313,7 @@ export class UsersController {
     );
   }
 
-  @Get('my-cards/:id')
+  @Get('my-cards/:userId/:cardId')
   @UseGuards(AuthGuard) // 인증된 사용자만 접근할 수 있도록
   @ApiOperation({
     summary: 'Get card details by card ID',
@@ -328,9 +328,11 @@ export class UsersController {
     description: 'Card not found',
   })
   async getCardById(
-    @Param('id') id: string,
-    @GetUser() user: { userId: string },
+    @Param('userId') userId: string,  // userId 파라미터를 추가로 받음
+    @Param('cardId') cardId: string,  // cardId 파라미터를 추가로 받음
+    @GetUser() user: { userId: string },  // 인증된 유저 정보
   ) {
-    return this.usersService.getCardById(id, user.userId);
+    // 유저 아이디와 카드 아이디가 모두 받아졌으므로, 서비스로 전달하여 카드 정보를 조회합니다.
+    return this.usersService.getCardById(cardId, userId); // userId와 cardId 모두 전달
   }
 }
