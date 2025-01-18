@@ -153,32 +153,37 @@ export class UsersController {
 
   @Post('my-cards')
   @UseGuards(AuthGuard)
-  @UseInterceptors(FileInterceptor('imageUrl', { 
-    storage: diskStorage({
-      destination: (req, file, cb) => {
-        const uploadDir = './uploads';
-        // uploads 디렉토리가 없으면 생성
-        if(!existsSync(uploadDir)){
-          mkdirSync(uploadDir, {recursive : true});
-        }
-        cb(null, uploadDir);
-      },
-      filename: (req, file, callback) => {
-        // 현재 시간을 파일 이름에 포함시켜 고유하게 만들기
-        const timestamp = Date.now();
-        //파일 확장자 보안 검사
-        const fileExtension = extname(file.originalname).toLowerCase();
-        if(!['.jpg', '.jpeg', '.png'].includes(fileExtension)){
-          return callback(new BadRequestException('지원하지 않는 파일 형식입니다'), null);
-        }
-        const newFileName = `${timestamp}-${Math.random().toString(36).substring(7)}${fileExtension}`; // timestamp + 확장자
-        callback(null, newFileName); // 새로운 파일 이름 저장
+  @UseInterceptors(
+    FileInterceptor('imageUrl', {
+      storage: diskStorage({
+        destination: (req, file, cb) => {
+          const uploadDir = './uploads';
+          // uploads 디렉토리가 없으면 생성
+          if (!existsSync(uploadDir)) {
+            mkdirSync(uploadDir, { recursive: true });
+          }
+          cb(null, uploadDir);
+        },
+        filename: (req, file, callback) => {
+          // 현재 시간을 파일 이름에 포함시켜 고유하게 만들기
+          const timestamp = Date.now();
+          //파일 확장자 보안 검사
+          const fileExtension = extname(file.originalname).toLowerCase();
+          if (!['.jpg', '.jpeg', '.png'].includes(fileExtension)) {
+            return callback(
+              new BadRequestException('지원하지 않는 파일 형식입니다'),
+              null,
+            );
+          }
+          const newFileName = `${timestamp}-${Math.random().toString(36).substring(7)}${fileExtension}`; // timestamp + 확장자
+          callback(null, newFileName); // 새로운 파일 이름 저장
+        },
+      }),
+      limits: {
+        fileSize: 5 * 1024 * 1024, // 5MB
       },
     }),
-    limits: {
-      fileSize: 5 * 1024 * 1024, // 5MB
-    },
-  }))
+  )
   @ApiOperation({
     summary: '포토카드 생성',
     description: '새로운 포토카드를 생성하고 이미지를 업로드합니다.',
@@ -328,9 +333,9 @@ export class UsersController {
     description: 'Card not found',
   })
   async getCardById(
-    @Param('userId') userId: string,  // userId 파라미터를 추가로 받음
-    @Param('cardId') cardId: string,  // cardId 파라미터를 추가로 받음
-    @GetUser() user: { userId: string },  // 인증된 유저 정보
+    @Param('userId') userId: string, // userId 파라미터를 추가로 받음
+    @Param('cardId') cardId: string, // cardId 파라미터를 추가로 받음
+    @GetUser() user: { userId: string }, // 인증된 유저 정보
   ) {
     // 유저 아이디와 카드 아이디가 모두 받아졌으므로, 서비스로 전달하여 카드 정보를 조회합니다.
     return this.usersService.getCardById(cardId, userId); // userId와 cardId 모두 전달
