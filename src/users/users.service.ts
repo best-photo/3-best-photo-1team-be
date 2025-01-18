@@ -17,6 +17,11 @@ import {
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { CreateCardDto } from 'src/cards/dto/create-card.dto';
 import { Card, CardGenre, CardGrade, Prisma, User } from '@prisma/client';
+import {
+  GetMyCardsRequestDto,
+  GetMySellingCardResponseDto,
+} from 'src/cards/dto/sellingCards/my-selling-card.dto';
+import { GetMyExchangeCardResponseDto } from 'src/cards/dto/exchangeCards/my-exchange-card.dto';
 
 @Injectable()
 export class UsersService {
@@ -318,6 +323,131 @@ export class UsersService {
       rare,
       superRare,
       legendary,
+    };
+  }
+
+  async getMySellingCards(userId: string, params: GetMyCardsRequestDto) {
+    const { grade, genre, stockState, salesMethod, keyword } = params;
+    const page = Number(params.page) ?? 1;
+    const limit = Number(params.limit) ?? 30;
+    const skip = (page - 1) * limit;
+
+    const cardWhere = {
+      ...(grade && { grade }),
+      ...(genre && { genre }),
+      ...(stockState && {
+        remainingQuantity:
+          stockState === 'IN_STOCK' ? { gt: 0 } : { equals: 0 },
+      }),
+      ...(keyword && {
+        OR: [
+          { name: { contains: keyword } },
+          { description: { contains: keyword } },
+        ],
+      }),
+    };
+
+    let sellingCards = [];
+    let exchangeCards = [];
+    let shopTotal = 0;
+    let exchangeTotal = 0;
+
+    if (!salesMethod || salesMethod === 'SALE') {
+      [sellingCards, shopTotal] = await Promise.all([
+        this.prisma.shop.findMany({
+          where: {
+            sellerId: userId,
+            card: cardWhere,
+          },
+          select: {
+            id: true,
+            price: true,
+            quantity: true,
+            sellerId: true,
+            createdAt: true,
+            updatedAt: true,
+            card: {
+              select: {
+                id: true,
+                name: true,
+                description: true,
+                grade: true,
+                genre: true,
+                owner: {
+                  select: {
+                    nickname: true,
+                  },
+                },
+              },
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+        }),
+        this.prisma.shop.count({
+          where: {
+            sellerId: userId,
+            card: cardWhere,
+          },
+        }),
+      ]);
+    }
+
+    if (!salesMethod || salesMethod === 'EXCHANGE') {
+      [exchangeCards, exchangeTotal] = await Promise.all([
+        this.prisma.exchange.findMany({
+          where: {
+            requesterId: userId,
+            offeredCard: cardWhere,
+          },
+          select: {
+            id: true,
+            targetCardId: true,
+            createdAt: true,
+            updatedAt: true,
+            offeredCard: {
+              select: {
+                id: true,
+                name: true,
+                description: true,
+                price: true,
+                grade: true,
+                genre: true,
+                owner: {
+                  select: {
+                    nickname: true,
+                  },
+                },
+              },
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+        }),
+        this.prisma.exchange.count({
+          where: {
+            requesterId: userId,
+          },
+        }),
+      ]);
+    }
+
+    const allCards = [...sellingCards, ...exchangeCards]
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+      .slice(skip, skip + limit);
+
+    const total = shopTotal + exchangeTotal;
+
+    return {
+      items: allCards.map((card) =>
+        'price' in card
+          ? GetMySellingCardResponseDto.of(card)
+          : GetMyExchangeCardResponseDto.of(card),
+      ),
+      meta: {
+        page,
+        limit,
+        total,
+        totalPage: Math.ceil(total / limit),
+      },
     };
   }
 }
