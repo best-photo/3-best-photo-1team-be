@@ -105,6 +105,29 @@ export class ShopController {
     return this.shopService.update(id, updateShopDto);
   }
 
+  @ApiOperation({ summary: '판매 포토 카드 정보 내리지/삭제' })
+  @ApiParam({
+    name: 'id',
+    required: true,
+    description: '판매 포토 카드 내리기/삭제',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '판매 포토 카드 내리기/삭제 성공',
+    schema: {
+      properties: {
+        message: {
+          type: 'string',
+          example: '판매 포토 카드가 삭제되었습니다.',
+        },
+      },
+    },
+  })
+  @Delete(':id')
+  remove(@Param('id') id: string) {
+    return this.shopService.remove(id);
+  }
+
   @Get('all')
   async findAllShops() {
     return await this.shopService.getAllShops();
@@ -163,9 +186,4 @@ export class ShopController {
   //   const filters = { query, grade, genre };
   //   return await this.shopService.findUserCards(userId, filters);
   // }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.shopService.remove(+id);
-  }
 }
