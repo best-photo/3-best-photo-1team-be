@@ -284,7 +284,7 @@ export class UsersService {
       where: { ownerId: userId },
       _count: {
         grade: true,
-      }
+      },
     });
 
     // 각 등급별 카운트 초기화

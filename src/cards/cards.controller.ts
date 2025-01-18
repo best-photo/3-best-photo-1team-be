@@ -57,5 +57,4 @@ export class CardsController {
   remove(@Param('id') id: string) {
     return this.cardsService.remove(+id);
   }
-
 }
