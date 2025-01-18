@@ -39,12 +39,12 @@ export class CardsService {
         },
       },
     });
-  
+
     // 카드가 존재하지 않을 경우 예외 처리
     if (!card) {
       throw new NotFoundException('카드를 찾을 수 없습니다');
     }
-  
+
     // 카드 정보와 소유자 닉네임을 포함하여 반환
     return {
       ...card,
