@@ -12,7 +12,16 @@ import {
 import { ShopService } from './shop.service';
 import { CreateShopDto } from './dto/create-shop.dto';
 import { UpdateShopDto } from './dto/update-shop.dto';
+import {
+  ApiOkResponse,
+  ApiOperation,
+  ApiParam,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
+import { ShopDetailsResponse } from './dto/shop.dto';
 
+@ApiTags('Shop')
 @Controller('shop')
 export class ShopController {
   constructor(private readonly shopService: ShopService) {}
@@ -29,6 +38,51 @@ export class ShopController {
       console.error('판매 등록 실패:', error);
       throw new Error('판매 등록 중 오류가 발생했습니다.');
     }
+  }
+
+  @ApiParam({
+    name: 'id',
+    required: true,
+    description: '판매 포토 카드 상세 조회',
+  })
+  @ApiOperation({ summary: '판매 포토 카드 상세 조회' })
+  @ApiResponse({
+    status: 200,
+    description: '알림 목록 조회 성공',
+    type: ShopDetailsResponse,
+  })
+  @ApiOkResponse({
+    description: '판매 포토 카드 상세 조회 성공',
+    type: ShopDetailsResponse,
+    examples: {
+      example1: {
+        summary: '정상적인 응답 예시',
+        value: {
+          card: {
+            name: 'Legendary Card',
+            imageUrl: 'https://example.com/card-image.png',
+            grade: 'LEGENDARY',
+            genre: 'TRAVEL',
+            owner: 'coolNickname',
+            description: 'This is a legendary travel card!',
+          },
+          shop: {
+            price: 1000,
+            totalQuantity: 10,
+            remainingQuantity: 5,
+            exchangeInfo: {
+              grade: 'RARE',
+              genre: 'PORTRAIT',
+              description: 'Looking to trade for portrait cards of rare grade',
+            },
+          },
+        },
+      },
+    },
+  })
+  @Get(':id')
+  async getShopDetails(@Param('id') shopId: string) {
+    return this.shopService.getShopDetails(shopId);
   }
 
   @Get('all')
@@ -89,11 +143,6 @@ export class ShopController {
   //   const filters = { query, grade, genre };
   //   return await this.shopService.findUserCards(userId, filters);
   // }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.shopService.findOne(+id);
-  }
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateShopDto: UpdateShopDto) {

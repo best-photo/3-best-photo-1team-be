@@ -37,3 +37,24 @@ export class ShopDTO {
   @Min(0, { message: '상품 가격은 0 이상이어야 합니다.' })
   price: number;
 }
+
+export class ShopDetailsResponse {
+  card: {
+    name: string;
+    imageUrl: string;
+    grade: string;
+    genre: string;
+    owner: string; // 닉네임
+    description: string;
+  };
+  shop: {
+    price: number;
+    totalQuantity: number;
+    remainingQuantity: number;
+    exchangeInfo: {
+      grade: string;
+      genre: string;
+      description: string;
+    };
+  };
+}
