@@ -8,7 +8,6 @@ import {
   Delete,
   Query,
   NotFoundException,
-  InternalServerErrorException,
 } from '@nestjs/common';
 import { ShopService } from './shop.service';
 import { CreateShopDto } from './dto/create-shop.dto';
