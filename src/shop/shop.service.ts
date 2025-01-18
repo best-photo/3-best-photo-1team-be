@@ -168,6 +168,27 @@ export class ShopService {
     };
   }
 
+  // 판매 정보 삭제
+  async remove(id: string) {
+    // 판매 정보가 존재하는지 확인
+    const existingShop = await this.prisma.shop.findUnique({
+      where: { id },
+    });
+
+    if (!existingShop) {
+      throw new NotFoundException('판매 정보를 찾을 수 없습니다.');
+    }
+
+    // 판매 정보 삭제
+    await this.prisma.shop.delete({
+      where: { id },
+    });
+
+    return {
+      message: `${id} 판매 정보가 성공적으로 삭제되었습니다.`,
+    };
+  }
+
   async getAllShops() {
     const shops = await this.prisma.shop.findMany({
       include: {
@@ -322,9 +343,5 @@ export class ShopService {
 
   findOne(id: number) {
     return `This action returns a #${id} shop`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} shop`;
   }
 }
