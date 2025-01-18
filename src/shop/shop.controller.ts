@@ -84,12 +84,16 @@ export class ShopController {
   @Get(':id')
   async getShopDetails(@Param('id') shopId: string) {
     return this.shopService.getShopDetails(shopId);
-    try {
-      return await this.shopService.getShopDetails(shopId);
-    } catch (error) {
-      console.error('판매 포토 카드 상세 조회 실패:', error);
-      throw new InternalServerErrorException('Failed to fetch shop details');
-    }
+  }
+
+  @Get('all')
+  async findAllShops() {
+    return await this.shopService.getAllShops();
+  }
+
+  @Get('successOrFail/:id')
+  async getCardWithShop(@Param('id') cardId: string) {
+    return this.shopService.getCardWithShop(cardId);
   }
 
   @Get('cards')
@@ -102,7 +106,7 @@ export class ShopController {
     placeOrder?: '최신순' | '오래된 순' | '높은 가격순' | '낮은 가격순',
   ) {
     const filters = { query, grade, genre, status, placeOrder };
-    console.log('Filters:', filters);
+
     return await this.shopService.findAll(filters);
   }
 
@@ -114,6 +118,7 @@ export class ShopController {
     @Query('genre') genre?: 'TRAVEL' | 'LANDSCAPE' | 'PORTRAIT' | 'OBJECT',
   ) {
     const filters = { query, grade, genre };
+    console.log('Filters:', filters);
     return await this.shopService.findUserCards(userId, filters);
   }
 
