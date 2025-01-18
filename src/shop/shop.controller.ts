@@ -144,11 +144,6 @@ export class ShopController {
   //   return await this.shopService.findUserCards(userId, filters);
   // }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.shopService.findOne(+id);
-  }
-
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateShopDto: UpdateShopDto) {
     return this.shopService.update(+id, updateShopDto);
