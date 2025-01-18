@@ -107,6 +107,25 @@ export class ShopService {
       throw new NotFoundException('판매 정보를 찾을 수 없습니다.');
     }
 
+    // 수량 변경시 검증
+    if (updateShopDto.quantity !== undefined) {
+      const quantityDiff = updateShopDto.quantity - existingShop.quantity;
+      const newRemainingQuantity =
+        existingShop.card.remainingQuantity - quantityDiff;
+
+      if (newRemainingQuantity < 0) {
+        throw new Error('재고가 부족합니다.');
+      }
+
+      // 카드의 남은 수량도 업데이트
+      await this.prisma.card.update({
+        where: { id: existingShop.cardId },
+        data: {
+          remainingQuantity: newRemainingQuantity,
+        },
+      });
+    }
+
     // 판매 정보 업데이트
     const updatedShop = await this.prisma.shop.update({
       where: { id },
