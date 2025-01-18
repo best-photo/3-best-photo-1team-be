@@ -1,20 +1,22 @@
-enum PointType {
-  JOIN      @map("join")     // 회원가입
-  DRAW      @map("draw")     // 랜덤포인트
-  EXCHANGE  @map("exchange") // 교환
-  REFUND    @map("refund")   // 환불
-}
-
 model PointHistory {
   id        String    @id @default(cuid())
-  userId    String    /// 사용자 ID(User과 PointHistory는 1:N 관계)
-  points    Int       /// 포인트(획득 시 양수, 지불 시 음수)
-  pointType PointType /// 포인트 변경 유형 (예: "join(회원가입)", "draw(랜덤포인트)", "exchange(교환)", "refund(환불)")
-
-  user      User      @relation(fields: [userId], references: [id])
-
+  /// 사용자 ID(User과 PointHistory는 1:N 관계)
+  userId    String
+  /// 포인트(획득 시 양수, 지불 시 음수)
+  points    Int
+  /// 포인트 변경 유형 (예: "join(회원가입)", "draw(랜덤포인트)", "purchase(구매)", "exchange(교환)", "refund(환불)")
+  pointType PointType
   createdAt DateTime  @default(now()) @db.Timestamptz(6)
   updatedAt DateTime  @updatedAt @db.Timestamptz(6)
+  user      User      @relation(fields: [userId], references: [id])
 
   @@map("point_histories")
+}
+
+enum PointType {
+  JOIN      @map("join")     /// 회원가입
+  DRAW      @map("draw")     /// 랜덤포인트
+  PURCHASE  @map("purchase") /// 구매
+  EXCHANGE  @map("exchange") /// 교환
+  REFUND    @map("refund")   /// 환불
 }
