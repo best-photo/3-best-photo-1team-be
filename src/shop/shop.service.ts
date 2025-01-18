@@ -53,6 +53,7 @@ export class ShopService {
     }
   }
 
+  // 판매 카드 상세 조회
   async getShopDetails(shopId: string) {
     const shop = await this.prisma.shop.findUnique({
       where: { id: shopId },
@@ -87,6 +88,62 @@ export class ShopService {
           grade: shop.exchangeGrade,
           genre: shop.exchangeGenre,
           description: shop.exchangeDescription,
+        },
+      },
+    };
+  }
+
+  // 판매 정보 수정
+  async update(id: string, updateShopDto: UpdateShopDto) {
+    // 판매 정보가 존재하는지 확인
+    const existingShop = await this.prisma.shop.findUnique({
+      where: { id },
+      include: {
+        card: true,
+      },
+    });
+
+    if (!existingShop) {
+      throw new NotFoundException('판매 정보를 찾을 수 없습니다.');
+    }
+
+    // 판매 정보 업데이트
+    const updatedShop = await this.prisma.shop.update({
+      where: { id },
+      data: {
+        price: updateShopDto.price,
+        quantity: updateShopDto.quantity,
+        exchangeGrade: updateShopDto.exchangeGrade,
+        exchangeGenre: updateShopDto.exchangeGenre,
+        exchangeDescription: updateShopDto.exchangeDescription,
+      },
+      include: {
+        card: {
+          include: {
+            owner: true,
+          },
+        },
+        seller: true,
+      },
+    });
+
+    return {
+      card: {
+        name: updatedShop.card.name,
+        imageUrl: updatedShop.card.imageUrl,
+        grade: updatedShop.card.grade,
+        genre: updatedShop.card.genre,
+        owner: updatedShop.card.owner.nickname,
+        description: updatedShop.card.description,
+      },
+      shop: {
+        price: updatedShop.price,
+        totalQuantity: updatedShop.card.totalQuantity,
+        remainingQuantity: updatedShop.card.remainingQuantity,
+        exchangeInfo: {
+          grade: updatedShop.exchangeGrade,
+          genre: updatedShop.exchangeGenre,
+          description: updatedShop.exchangeDescription,
         },
       },
     };
@@ -246,10 +303,6 @@ export class ShopService {
 
   findOne(id: number) {
     return `This action returns a #${id} shop`;
-  }
-
-  update(id: number, updateShopDto: UpdateShopDto) {
-    return `This action updates a #${id} shop`;
   }
 
   remove(id: number) {
