@@ -133,6 +133,7 @@ export class GetMySellingCardResponseDto extends CardDto {
     response.grade = shop.card.grade;
     response.genre = shop.card.genre;
     response.price = shop.price;
+    response.totalQuantity = shop.quantity;
     response.createdAt = shop.createdAt;
     response.updatedAt = shop.updatedAt;
     response.state = 'sale';

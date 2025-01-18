@@ -47,6 +47,7 @@ export class GetMyExchangeCardResponseDto extends CardDto {
     response.description = exchange.offeredCard.description;
     response.grade = exchange.offeredCard.grade;
     response.genre = exchange.offeredCard.genre;
+    response.totalQuantity = 1;
     response.price = exchange.offeredCard.price;
     response.createdAt = exchange.createdAt;
     response.updatedAt = exchange.updatedAt;

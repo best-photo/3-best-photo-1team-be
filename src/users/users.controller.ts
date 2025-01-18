@@ -32,6 +32,7 @@ import { Express } from 'express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { existsSync, mkdirSync } from 'fs';
+import { GetMyCardsRequestDto } from 'src/cards/dto/sellingCards/my-selling-card.dto';
 
 @Controller('users')
 export class UsersController {
@@ -346,5 +347,42 @@ export class UsersController {
   async getUserPhotoCardInfo(@GetUser() user: { userId: string }) {
     const { userId } = user;
     return this.usersService.getUserPhotoCardInfo(userId);
+  }
+
+  @Get('my-cards/sales')
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: '내 판매 카드 목록 조회' })
+  @ApiResponse({
+    status: 200,
+    description: '내 판매 카드 조회 성공',
+  })
+  @ApiResponse({
+    status: 400,
+    description: '잘못된 요청 데이터',
+  })
+  @ApiResponse({
+    status: 401,
+    description: '인증 정보가 존재하지 않습니다.',
+  })
+  @ApiResponse({
+    status: 500,
+    description: '판매 카드 조회 중 오류가 발생했습니다.',
+  })
+  async getMySellingCards(
+    @GetUser() user: { userId: string },
+    @Query() params: GetMyCardsRequestDto,
+  ) {
+    try {
+      return await this.usersService.getMySellingCards(user.userId, params);
+    } catch (error) {
+      if (error instanceof PrismaClientKnownRequestError) {
+        throw new InternalServerErrorException(
+          '데이터베이스 조회 중 오류가 발생했습니다.',
+        );
+      }
+      throw new InternalServerErrorException(
+        '판매 카드 조회 중 오류가 발생했습니다.',
+      );
+    }
   }
 }
