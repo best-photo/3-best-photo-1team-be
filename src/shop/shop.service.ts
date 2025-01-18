@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateShopDto } from './dto/create-shop.dto';
 import { UpdateShopDto } from './dto/update-shop.dto';
 import { Card } from '@prisma/client';
@@ -51,6 +51,45 @@ export class ShopService {
       console.error('판매 등록 중 오류 발생:', error);
       throw new Error('판매 등록에 실패했습니다.');
     }
+  }
+
+  async getShopDetails(shopId: string) {
+    const shop = await this.prisma.shop.findUnique({
+      where: { id: shopId },
+      include: {
+        card: {
+          include: {
+            owner: true, // 카드 소유자 정보
+          },
+        },
+        seller: true, // 판매자 정보
+      },
+    });
+
+    if (!shop) {
+      throw new NotFoundException('판매 정보를 찾을 수 없습니다.');
+    }
+
+    return {
+      card: {
+        name: shop.card.name,
+        imageUrl: shop.card.imageUrl,
+        grade: shop.card.grade,
+        genre: shop.card.genre,
+        owner: shop.card.owner.nickname,
+        description: shop.card.description,
+      },
+      shop: {
+        price: shop.price,
+        totalQuantity: shop.card.totalQuantity,
+        remainingQuantity: shop.card.remainingQuantity,
+        exchangeInfo: {
+          grade: shop.exchangeGrade,
+          genre: shop.exchangeGenre,
+          description: shop.exchangeDescription,
+        },
+      },
+    };
   }
 
   async findAll(filters: {
