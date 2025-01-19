@@ -2,12 +2,14 @@ model Purchase {
   id        String   @id @default(cuid())
   /// 구매자의 id(구매자와 구매는 1:N 관계)
   buyerId   String
-  /// 구매한 카드의 id(카드와 구매는 1:N 관계)
-  cardId    String
+  /// 구매한 상점의 id(상점과 구매는 1:N 관계)
+  shopId    String
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @db.Timestamptz(6)
+  /// 구매자
   user      User     @relation(fields: [buyerId], references: [id])
-  card      Card     @relation(fields: [cardId], references: [id])
+  /// 구매한 상점
+  shop      Shop     @relation(fields: [shopId], references: [id])
 
   @@map("purchases")
 }
