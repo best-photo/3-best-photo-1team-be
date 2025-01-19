@@ -95,6 +95,23 @@ export class GetMyCardsRequestDto {
   limit?: number = 30;
 }
 
+enum Filter {
+  grade = 'grade',
+  genre = 'genre',
+  salesMethod = 'salesMethod',
+  stockState = 'stockState',
+}
+
+export class GetMyCardsCountRequestDto {
+  @ApiProperty({
+    required: true,
+    enum: Filter,
+    description: '조회할 필터링 기준',
+  })
+  @IsEnum(Filter)
+  filter: Filter;
+}
+
 export class GetMySellingCardResponseDto extends CardDto {
   @ApiProperty({
     nullable: false,
@@ -133,7 +150,8 @@ export class GetMySellingCardResponseDto extends CardDto {
     response.grade = shop.card.grade;
     response.genre = shop.card.genre;
     response.price = shop.price;
-    response.totalQuantity = shop.quantity;
+    response.totalQuantity = shop.initialQuantity;
+    response.remainingQuantity = shop.remainingQuantity;
     response.createdAt = shop.createdAt;
     response.updatedAt = shop.updatedAt;
     response.state = 'sale';
