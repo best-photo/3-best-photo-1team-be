@@ -9,7 +9,7 @@ import { Card } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CardGrade, CardGenre } from '@prisma/client';
 import { ShopDetailsResponse } from './dto/shop.dto';
-import { PurchaseCardDto } from './dto/purchase-card.dto';
+import { PurchaseCardDto, PurchaseResponseDto } from './dto/purchase-card.dto';
 
 @Injectable()
 export class ShopService {
@@ -401,9 +401,9 @@ export class ShopService {
         throw new BadRequestException('자신의 카드는 구매할 수 없습니다.');
       }
 
-      // 2. 재고 확인
-      if (shop.card.remainingQuantity < quantity) {
-        throw new Error('재고가 부족합니다.');
+      // 2. 재고 확인 (Shop의 remainingQuantity 사용)
+      if (shop.remainingQuantity < quantity) {
+        throw new BadRequestException('재고가 부족합니다.');
       }
 
       // 3. 구매자의 포인트 잔액 확인
@@ -428,10 +428,6 @@ export class ShopService {
           balance: buyerPoint.balance, // 낙관적 락킹을 위한 조건
         },
         data: {
-          // 동시성 문제 있음
-          // balance: {
-          //   decrement: buyerPoint.balance - totalPrice,
-          // },
           balance: {
             decrement: totalPrice,
           },
@@ -448,27 +444,27 @@ export class ShopService {
         },
       });
 
-      // 6. 판매자 포인트 이력 생성
-      await prisma.pointHistory.create({
-        data: {
-          userId: shop.sellerId,
-          points: totalPrice,
-          pointType: 'PURCHASE',
-        },
-      });
+      // 6. 포인트 이력 생성 (판매자, 구매자)
+      await Promise.all([
+        prisma.pointHistory.create({
+          data: {
+            userId: shop.sellerId,
+            points: totalPrice,
+            pointType: 'PURCHASE',
+          },
+        }),
+        prisma.pointHistory.create({
+          data: {
+            userId: userId,
+            points: -totalPrice,
+            pointType: 'PURCHASE',
+          },
+        }),
+      ]);
 
-      // 6. 구매자 포인트 이력 생성
-      await prisma.pointHistory.create({
-        data: {
-          userId: userId,
-          points: -totalPrice,
-          pointType: 'PURCHASE',
-        },
-      });
-
-      // 7. 카드 재고 업데이트
-      await prisma.card.update({
-        where: { id: shop.cardId },
+      // 7. Shop의 재고 업데이트
+      await prisma.shop.update({
+        where: { id: shopId },
         data: {
           remainingQuantity: {
             decrement: quantity,
@@ -476,21 +472,83 @@ export class ShopService {
         },
       });
 
-      // 8. 구매 기록 생성
-      const purchase = await prisma.purchase.create({
+      // 8. 판매자 카드 수량 감소
+      const sellerCard = await prisma.card.findFirst({
+        where: { id: shop.cardId },
+      });
+
+      if (!sellerCard) {
+        throw new Error('판매자의 카드 정보를 찾을 수 없습니다.');
+      }
+
+      await prisma.card.update({
+        where: { id: sellerCard.id },
         data: {
-          buyerId: userId,
-          cardId: shop.cardId,
+          totalQuantity: {
+            decrement: quantity,
+          },
         },
       });
 
-      // 9. 구매 알림 생성
-      await prisma.notification.create({
-        data: {
-          userId: shop.sellerId,
-          content: `회원님의 카드 "${shop.card.name}"가 ${quantity}개 판매되었습니다.`,
+      // 9. 구매자 카드 소유량 처리
+      const buyerCard = await prisma.card.findFirst({
+        where: {
+          id: shop.cardId,
+          ownerId: userId,
         },
       });
+
+      if (buyerCard) {
+        // 이미 같은 카드를 가지고 있는 경우 수량 증가
+        await prisma.card.update({
+          where: { id: buyerCard.id },
+          data: {
+            totalQuantity: {
+              increment: quantity,
+            },
+          },
+        });
+      } else {
+        // 새로운 카드를 생성하는 경우
+        await prisma.card.create({
+          data: {
+            id: shop.cardId,
+            ownerId: userId,
+            name: sellerCard.name,
+            price: sellerCard.price,
+            imageUrl: sellerCard.imageUrl,
+            grade: sellerCard.grade,
+            genre: sellerCard.genre,
+            description: sellerCard.description,
+            totalQuantity: quantity,
+            remainingQuantity: quantity, // 현재는 사용되지 않지만 데이터 일관성을 위해 포함
+          },
+        });
+      }
+
+      // 9. 구매 기록 생성
+      const purchase = await prisma.purchase.create({
+        data: {
+          buyerId: userId,
+          shopId: shopId,
+        },
+      });
+
+      // 10. 구매 알림 생성 (구매자, 판매자 모두에게 알림)
+      await Promise.all([
+        prisma.notification.create({
+          data: {
+            userId: shop.sellerId,
+            content: `회원님의 카드 \"${shop.card.name}\"가 ${quantity}개 판매되었습니다.`,
+          },
+        }),
+        prisma.notification.create({
+          data: {
+            userId: userId,
+            content: `\"${shop.card.name}\" 카드 ${quantity}개를 성공적으로 구매하였습니다.`,
+          },
+        }),
+      ]);
 
       return {
         message: '구매가 완료되었습니다.',
@@ -501,7 +559,7 @@ export class ShopService {
           totalPrice,
           remainingPoints: updatedBuyerPoint.balance,
         },
-      };
+      } satisfies PurchaseResponseDto;
     });
   }
 }
