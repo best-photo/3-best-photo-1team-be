@@ -187,6 +187,9 @@ export class ShopService {
     // 판매 정보가 존재하는지 확인
     const existingShop = await this.prisma.shop.findUnique({
       where: { id },
+      include: {
+        card: true,
+      },
     });
 
     if (!existingShop) {
