@@ -9,6 +9,8 @@ import { Card } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CardGrade, CardGenre } from '@prisma/client';
 import { ShopDetailsResponse } from './dto/shop.dto';
+import { PurchaseCardDto } from './dto/purchase-card.dto';
+import { PurchaseResponseDto } from './dto/purchase-response.dto';
 
 @Injectable()
 export class ShopService {
@@ -298,7 +300,7 @@ export class ShopService {
         ...statusFilter,
       },
       include: {
-        shop: true,
+        Shop: true,
         owner: {
           select: {
             nickname: true,
@@ -310,7 +312,7 @@ export class ShopService {
 
     return cards.map((card) => ({
       ...card,
-      quantity: card.shop?.quantity || null,
+      quantity: card.Shop?.quantity || null,
       createdAt: card.shop?.createdAt || card.createdAt,
     }));
   }
@@ -375,7 +377,204 @@ export class ShopService {
     return card;
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} shop`;
+  // 판매 포토 카드 구매
+  async purchaseCard(userId: string, purchaseCardDto: PurchaseCardDto) {
+    const { shopId, quantity } = purchaseCardDto;
+
+    // 트랜잭션 시작
+    return await this.prisma.$transaction(async (prisma) => {
+      // 1. 상점 정보 조회
+      const shop = await prisma.shop.findUnique({
+        where: { id: shopId },
+        include: {
+          card: true,
+          seller: true,
+        },
+      });
+
+      // 상점 정보가 없으면 에러 발생
+      if (!shop) {
+        throw new NotFoundException('상점을 찾을 수 없습니다.');
+      }
+
+      // 자신의 카드는 구매할 수 없음
+      if (shop.sellerId === userId) {
+        throw new BadRequestException('자신의 카드는 구매할 수 없습니다.');
+      }
+
+      // 2. 재고 확인 (Shop의 remainingQuantity 사용)
+      if (shop.remainingQuantity < quantity) {
+        throw new BadRequestException('재고가 부족합니다.');
+      }
+
+      // 3. 구매자의 포인트 잔액 확인
+      const buyerPoint = await prisma.point.findUnique({
+        where: { userId },
+      });
+
+      if (!buyerPoint) {
+        throw new NotFoundException('구매자 포인트 정보를 찾을 수 없습니다.');
+      }
+
+      const totalPrice = shop.price * quantity;
+
+      if (buyerPoint.balance < totalPrice) {
+        throw new BadRequestException('잔액이 부족합니다.');
+      }
+
+      // 4. 구매자 포인트 차감
+      const updatedBuyerPoint = await prisma.point.update({
+        where: {
+          userId,
+          balance: buyerPoint.balance, // 낙관적 락킹을 위한 조건
+        },
+        data: {
+          balance: {
+            decrement: totalPrice,
+          },
+        },
+      });
+
+      // 5. 판매자 포인트 추가
+      // 판매자 포인트 역시 동시에 여러 거래가 발생할 수 있으므로 낙관적 락킹을 사용
+      const sellerPoint = await prisma.point.findUnique({
+        where: { userId: shop.sellerId },
+      });
+
+      if (!sellerPoint) {
+        throw new NotFoundException('판매자 포인트 정보를 찾을 수 없습니다.');
+      }
+
+      await prisma.point.update({
+        where: {
+          userId: shop.sellerId,
+          balance: sellerPoint.balance, // 낙관적 락킹 조건 추가
+        },
+        data: {
+          balance: {
+            increment: totalPrice,
+          },
+        },
+      });
+
+      // 6. 포인트 이력 생성 (판매자, 구매자)
+      await Promise.all([
+        prisma.pointHistory.create({
+          data: {
+            userId: shop.sellerId,
+            points: totalPrice,
+            pointType: 'PURCHASE',
+          },
+        }),
+        prisma.pointHistory.create({
+          data: {
+            userId: userId,
+            points: -totalPrice,
+            pointType: 'PURCHASE',
+          },
+        }),
+      ]);
+
+      // 7. Shop의 재고 업데이트
+      await prisma.shop.update({
+        where: {
+          id: shopId,
+          remainingQuantity: shop.remainingQuantity, // 낙관적 락킹을 위한 조건, 재고 수량이 변경되었을 경우 업데이트가 실패함
+        },
+        data: {
+          remainingQuantity: {
+            decrement: quantity,
+          },
+        },
+      });
+
+      // 8. 판매자 카드 수량 감소
+      const sellerCard = await prisma.card.findFirst({
+        where: { id: shop.cardId },
+      });
+
+      if (!sellerCard) {
+        throw new Error('판매자의 카드 정보를 찾을 수 없습니다.');
+      }
+
+      await prisma.card.update({
+        where: { id: sellerCard.id },
+        data: {
+          totalQuantity: {
+            decrement: quantity,
+          },
+        },
+      });
+
+      // 9. 구매자 카드 소유량 처리
+      const buyerCard = await prisma.card.findFirst({
+        where: {
+          id: shop.cardId,
+          ownerId: userId,
+        },
+      });
+
+      if (buyerCard) {
+        // 이미 같은 카드를 가지고 있는 경우 수량 증가
+        await prisma.card.update({
+          where: { id: buyerCard.id },
+          data: {
+            totalQuantity: {
+              increment: quantity,
+            },
+          },
+        });
+      } else {
+        // 새로운 카드를 생성하는 경우
+        await prisma.card.create({
+          data: {
+            ownerId: userId,
+            name: sellerCard.name,
+            price: sellerCard.price,
+            imageUrl: sellerCard.imageUrl,
+            grade: sellerCard.grade,
+            genre: sellerCard.genre,
+            description: sellerCard.description,
+            totalQuantity: quantity,
+            remainingQuantity: quantity, // 현재는 사용되지 않지만 데이터 일관성을 위해 포함
+          },
+        });
+      }
+
+      // 9. 구매 기록 생성
+      const purchase = await prisma.purchase.create({
+        data: {
+          buyerId: userId,
+          shopId: shopId,
+        },
+      });
+
+      // 10. 구매 알림 생성 (구매자, 판매자 모두에게 알림)
+      await Promise.all([
+        prisma.notification.create({
+          data: {
+            userId: shop.sellerId,
+            content: `회원님의 카드 \"${shop.card.name}\"가 ${quantity}개 판매되었습니다.`,
+          },
+        }),
+        prisma.notification.create({
+          data: {
+            userId: userId,
+            content: `\"${shop.card.name}\" 카드 ${quantity}개를 성공적으로 구매하였습니다.`,
+          },
+        }),
+      ]);
+
+      return {
+        message: '구매가 완료되었습니다.',
+        data: {
+          purchaseId: purchase.id,
+          cardName: shop.card.name,
+          quantity,
+          totalPrice,
+          remainingPoints: updatedBuyerPoint.balance,
+        },
+      } satisfies PurchaseResponseDto;
+    });
   }
 }
