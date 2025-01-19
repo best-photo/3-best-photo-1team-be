@@ -1,15 +1,33 @@
 model Exchange {
-  id           String  @id @default(cuid())
-  requesterId  String  /// 교환 요청자의 id(요청자[User]와 교환[Exchange]은 1:N 관계)
-  offeredCardId String /// 교환 요청자가 제시한 카드의 id(제시한 카드[Card]와 교환[Exchange]은 1:N 관계)
-  targetCardId  String /// 교환 대상자가 제시한 카드의 id(제시한 카드[Card]와 교환[Exchange]은 1:N 관계)
-
-  requester  User @relation(fields: [requesterId], references: [id])
-  offeredCard Card @relation("OfferedCard", fields: [offeredCardId], references: [id])
-  targetCard  Card @relation("TargetCard", fields: [targetCardId], references: [id])
-
-  createdAt       DateTime         @default(now()) @db.Timestamptz(6)
-  updatedAt       DateTime         @updatedAt @db.Timestamptz(6)
+  id            String         @id @default(cuid())
+  /// 교환 요청자의 id(요청자[User]와 교환[Exchange]은 1:N 관계)
+  requesterId   String
+  /// 교환 요청자가 제시한 카드의 id(제시한 카드[Card]와 교환[Exchange]은 1:N 관계)
+  offeredCardId String
+  /// 교환 대상자가 제시한 카드의 id(제시한 카드[Card]와 교환[Exchange]은 1:N 관계)
+  targetCardId  String
+  /// 교환 상태 (REQUESTED, ACCEPTED, REJECTED, COMPLETED)
+  status        ExchangeStatus
+  createdAt     DateTime       @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime       @updatedAt @db.Timestamptz(6)
+  /// 교환 제시 카드
+  offeredCard   Card           @relation("OfferedCard", fields: [offeredCardId], references: [id])
+  /// 교환 요청자
+  requester     User           @relation(fields: [requesterId], references: [id])
+  /// 교환 대상 카드
+  targetCard    Card           @relation("TargetCard", fields: [targetCardId], references: [id])
 
   @@map("exchanges")
+}
+
+/// 교환 상태
+enum ExchangeStatus {
+  /// 교환 요청
+  REQUESTED @map("requested")
+  /// 교환 수락
+  ACCEPTED  @map("accepted")
+  /// 교환 거절
+  REJECTED  @map("rejected")
+  /// 교환 완료
+  COMPLETED @map("completed")
 }

@@ -1,13 +1,15 @@
 model Notification {
-  id       String   @id @default(cuid())
-  userId   String   /// 알림을 받을 사용자 ID(User과 Notification은 1:N 관계)
-  content  String   @db.Text /// 알림 내용
-  isRead   Boolean  @default(false) /// 읽음 여부
-
-  user     User     @relation(fields: [userId], references: [id])
-
-  createdAt       DateTime         @default(now()) @db.Timestamptz(6)
-  updatedAt       DateTime         @updatedAt @db.Timestamptz(6)
+  id        String   @id @default(cuid())
+  /// 알림을 받을 사용자 ID(User과 Notification은 1:N 관계)
+  userId    String
+  /// 알림 내용
+  content   String
+  /// 읽음 여부
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+  /// 알림을 받을 사용자
+  user      User     @relation(fields: [userId], references: [id])
 
   @@map("notifications")
 }

@@ -1,18 +1,29 @@
 model Shop {
-  id                  String    @id @default(cuid())
-  sellerId            String /// 판매자의 id(판매자[User]와 상점[Shop]은 1:N 관계)
-  cardId              String    @unique /// 판매할 카드의 id(카드[Card]와 상점[Shop]은 1:1 관계)
-  price               Int /// 판매 가격
-  quantity            Int       @default(0) /// 판매자가 판매하려는 수량 (기본값 0)
-  exchangeGrade       CardGrade @default(COMMON) /// 교환 희망 등급 (기본값 COMMON)
-  exchangeGenre       CardGenre @default(TRAVEL) /// 교환 희망 장르 (기본값 TRAVEL)
-  exchangeDescription String?   @db.Text /// 교환 희망 설명 (선택 사항)
-
-  seller User @relation(fields: [sellerId], references: [id])
-  card   Card @relation(fields: [cardId], references: [id])
-
-  createdAt DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+  id                  String     @id @default(cuid())
+  /// 판매자의 id(판매자[User]와 상점[Shop]은 1:N 관계)
+  sellerId            String
+  /// 판매할 카드의 id(카드[Card]와 상점[Shop]은 1:1 관계)
+  cardId              String     @unique
+  /// 판매 가격
+  price               Int
+  /// 판매자가 판매하려는 초기 수량 (기본값 0)
+  initialQuantity     Int        @default(0)
+  /// 판매자가 판매하려는 남은 수량 (기본값 0)
+  remainingQuantity   Int        @default(0)
+  /// 교환 희망 등급 (기본값 COMMON)
+  exchangeGrade       CardGrade  @default(COMMON)
+  /// 교환 희망 장르 (기본값 TRAVEL)
+  exchangeGenre       CardGenre  @default(TRAVEL)
+  /// 교환 희망 설명 (선택 사항)
+  exchangeDescription String?
+  createdAt           DateTime   @default(now()) @db.Timestamptz(6)
+  updatedAt           DateTime   @updatedAt @db.Timestamptz(6)
+  /// 판매할 카드
+  card                Card       @relation(fields: [cardId], references: [id])
+  /// 판매자
+  seller              User       @relation(fields: [sellerId], references: [id])
+  /// 상점에 등록된 판매(상점과 판매는 1:N 관계)
+  Purchase            Purchase[]
 
   @@map("shops")
 }
