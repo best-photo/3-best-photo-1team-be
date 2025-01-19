@@ -7,7 +7,7 @@ model Card {
   /// 카드에 부여되어 있는 포인트 가격
   price             Int
   /// 카드 이미지 URL
-  imageUrl          String    @db.VarChar(2048)
+  imageUrl          String     @db.VarChar(2048)
   /// 카드 등급(common, rare, super rare, legendary)
   grade             CardGrade
   /// 카드 장르(예: 여행, 풍경, 인물, 사물 등)
@@ -20,14 +20,16 @@ model Card {
   remainingQuantity Int
   createdAt         DateTime   @default(now()) @db.Timestamptz(6)
   updatedAt         DateTime   @updatedAt @db.Timestamptz(6)
+  /// 카드 소유자
   owner             User       @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  /// 카드를 제시한 교환(카드와 교환은 1:N 관계)
   offeredExchanges  Exchange[] @relation("OfferedCard")
+  /// 카드를 받은 교환(카드와 교환은 1:N 관계)
   targetExchanges   Exchange[] @relation("TargetCard")
-  purchases         Purchase[]
-  shop              Shop?
+  /// 카드를 판매하는 상점(카드와 상점은 1:1 관계)
+  Shop              Shop?
 
   @@index([ownerId])
-
   @@map("cards")
 }
 

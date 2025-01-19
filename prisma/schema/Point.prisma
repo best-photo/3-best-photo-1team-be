@@ -6,6 +6,7 @@ model Point {
   balance   Int      @default(0)
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @db.Timestamptz(6)
+  /// 포인트 소유자(포인트와 사용자는 1:1 관계)
   user      User     @relation(fields: [userId], references: [id])
 
   @@map("points")

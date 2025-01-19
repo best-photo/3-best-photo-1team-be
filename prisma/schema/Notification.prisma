@@ -8,6 +8,7 @@ model Notification {
   isRead    Boolean  @default(false)
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @db.Timestamptz(6)
+  /// 알림을 받을 사용자
   user      User     @relation(fields: [userId], references: [id])
 
   @@map("notifications")

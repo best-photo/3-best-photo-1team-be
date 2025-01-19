@@ -8,15 +8,16 @@ model PointHistory {
   pointType PointType
   createdAt DateTime  @default(now()) @db.Timestamptz(6)
   updatedAt DateTime  @updatedAt @db.Timestamptz(6)
+  /// 포인트 소유자(포인트 히스토리와 사용자는 1:N 관계)
   user      User      @relation(fields: [userId], references: [id])
 
   @@map("point_histories")
 }
 
 enum PointType {
-  JOIN      @map("join")     /// 회원가입
-  DRAW      @map("draw")     /// 랜덤포인트
-  PURCHASE  @map("purchase") /// 구매
-  EXCHANGE  @map("exchange") /// 교환
-  REFUND    @map("refund")   /// 환불
+  JOIN     @map("join") /// 회원가입
+  DRAW     @map("draw") /// 랜덤포인트
+  PURCHASE @map("purchase") /// 구매
+  EXCHANGE @map("exchange") /// 교환
+  REFUND   @map("refund") /// 환불
 }
