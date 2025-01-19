@@ -77,14 +77,17 @@ export class ShopService {
     }
 
     return {
-      card: {
-        name: shop.card.name,
-        imageUrl: shop.card.imageUrl,
-        grade: shop.card.grade,
-        genre: shop.card.genre,
-        owner: shop.card.owner.nickname,
-        description: shop.card.description,
-      },
+      // 상점에 올렸는데 회원탈퇴한 경우 판매자 정보가 null이 될 수 있음
+      card: shop.card
+        ? {
+            name: shop.card.name,
+            imageUrl: shop.card.imageUrl,
+            grade: shop.card.grade,
+            genre: shop.card.genre,
+            owner: shop.card.owner?.nickname ?? '소유자 정보 없음',
+            description: shop.card.description,
+          }
+        : null,
       shop: {
         price: shop.price,
         initialQuantity: shop.initialQuantity,
@@ -124,6 +127,17 @@ export class ShopService {
           updateShopDto.initialQuantity <
           (updateShopDto.remainingQuantity ?? existingShop.remainingQuantity)
         ) {
+          throw new BadRequestException(
+            '초기 수량은 남은 수량보다 작을 수 없습니다.',
+          );
+        }
+      }
+
+      if (
+        updateShopDto.initialQuantity != null &&
+        updateShopDto.remainingQuantity != null
+      ) {
+        if (updateShopDto.initialQuantity < updateShopDto.remainingQuantity) {
           throw new BadRequestException(
             '초기 수량은 남은 수량보다 작을 수 없습니다.',
           );
