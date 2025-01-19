@@ -100,86 +100,89 @@ export class ShopService {
 
   // 판매 정보 수정
   async update(id: string, updateShopDto: UpdateShopDto) {
-    // 판매 정보가 존재하는지 확인
-    const existingShop = await this.prisma.shop.findUnique({
-      where: { id },
-      include: {
-        card: {
-          include: {
-            owner: true,
+    // 트랜잭션 적용
+    return this.prisma.$transaction(async (tx) => {
+      // 판매 정보가 존재하는지 확인
+      const existingShop = await tx.shop.findUnique({
+        where: { id },
+        include: {
+          card: {
+            include: {
+              owner: true,
+            },
           },
         },
-      },
-    });
+      });
 
-    if (!existingShop) {
-      throw new NotFoundException('판매 정보를 찾을 수 없습니다.');
-    }
-
-    // 수량 검증
-    if (updateShopDto.initialQuantity !== undefined) {
-      if (
-        updateShopDto.initialQuantity <
-        (updateShopDto.remainingQuantity ?? existingShop.remainingQuantity)
-      ) {
-        throw new BadRequestException(
-          '초기 수량은 남은 수량보다 작을 수 없습니다.',
-        );
+      if (!existingShop) {
+        throw new NotFoundException('판매 정보를 찾을 수 없습니다.');
       }
-    }
 
-    if (updateShopDto.remainingQuantity !== undefined) {
-      if (
-        (updateShopDto.initialQuantity ?? existingShop.initialQuantity) <
-        updateShopDto.remainingQuantity
-      ) {
-        throw new BadRequestException(
-          '남은 수량은 초기 수량보다 클 수 없습니다.',
-        );
+      // 수량 검증
+      if (updateShopDto.initialQuantity !== undefined) {
+        if (
+          updateShopDto.initialQuantity <
+          (updateShopDto.remainingQuantity ?? existingShop.remainingQuantity)
+        ) {
+          throw new BadRequestException(
+            '초기 수량은 남은 수량보다 작을 수 없습니다.',
+          );
+        }
       }
-    }
 
-    // 판매 정보 업데이트
-    const updatedShop = await this.prisma.shop.update({
-      where: { id },
-      data: {
-        price: updateShopDto.price,
-        initialQuantity: updateShopDto.initialQuantity,
-        remainingQuantity: updateShopDto.remainingQuantity,
-        exchangeGrade: updateShopDto.exchangeGrade,
-        exchangeGenre: updateShopDto.exchangeGenre,
-        exchangeDescription: updateShopDto.exchangeDescription,
-      },
-      include: {
+      if (updateShopDto.remainingQuantity !== undefined) {
+        if (
+          (updateShopDto.initialQuantity ?? existingShop.initialQuantity) <
+          updateShopDto.remainingQuantity
+        ) {
+          throw new BadRequestException(
+            '남은 수량은 초기 수량보다 클 수 없습니다.',
+          );
+        }
+      }
+
+      // 판매 정보 업데이트
+      const updatedShop = await tx.shop.update({
+        where: { id },
+        data: {
+          price: updateShopDto.price,
+          initialQuantity: updateShopDto.initialQuantity,
+          remainingQuantity: updateShopDto.remainingQuantity,
+          exchangeGrade: updateShopDto.exchangeGrade,
+          exchangeGenre: updateShopDto.exchangeGenre,
+          exchangeDescription: updateShopDto.exchangeDescription,
+        },
+        include: {
+          card: {
+            include: {
+              owner: true,
+            },
+          },
+          seller: true,
+        },
+      });
+
+      return {
         card: {
-          include: {
-            owner: true,
+          name: updatedShop.card.name,
+          imageUrl: updatedShop.card.imageUrl,
+          grade: updatedShop.card.grade,
+          genre: updatedShop.card.genre,
+          owner: updatedShop.card.owner.nickname,
+          description: updatedShop.card.description,
+        },
+        shop: {
+          price: updatedShop.price,
+          initialQuantity: updatedShop.initialQuantity,
+          remainingQuantity: updatedShop.remainingQuantity,
+          exchangeInfo: {
+            grade: updatedShop.exchangeGrade,
+            genre: updatedShop.exchangeGenre,
+            description: updatedShop.exchangeDescription,
           },
         },
-        seller: true,
-      },
+      };
     });
-
-    return {
-      card: {
-        name: updatedShop.card.name,
-        imageUrl: updatedShop.card.imageUrl,
-        grade: updatedShop.card.grade,
-        genre: updatedShop.card.genre,
-        owner: updatedShop.card.owner.nickname,
-        description: updatedShop.card.description,
-      },
-      shop: {
-        price: updatedShop.price,
-        initialQuantity: updatedShop.initialQuantity,
-        remainingQuantity: updatedShop.remainingQuantity,
-        exchangeInfo: {
-          grade: updatedShop.exchangeGrade,
-          genre: updatedShop.exchangeGenre,
-          description: updatedShop.exchangeDescription,
-        },
-      },
-    };
   }
 
   // 판매 정보 삭제
