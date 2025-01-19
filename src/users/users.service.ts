@@ -362,7 +362,8 @@ export class UsersService {
           select: {
             id: true,
             price: true,
-            quantity: true,
+            initialQuantity: true,
+            remainingQuantity: true,
             sellerId: true,
             createdAt: true,
             updatedAt: true,
