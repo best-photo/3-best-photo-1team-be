@@ -24,6 +24,7 @@ import { ShopDetailsResponse } from './dto/shop.dto';
 import { GetUser } from 'src/auth/decorators/get-user.decorator';
 import { PurchaseResponseDto } from './dto/purchase-response.dto';
 import { PurchaseCardDto } from './dto/purchase-card.dto';
+import { CardGenre, CardGrade } from '@prisma/client';
 
 @ApiTags('Shop')
 @Controller('shop')
@@ -65,18 +66,18 @@ export class ShopController {
           card: {
             name: 'Legendary Card',
             imageUrl: 'https://example.com/card-image.png',
-            grade: 'LEGENDARY',
-            genre: 'TRAVEL',
+            grade: CardGrade.LEGENDARY,
+            genre: CardGenre.TRAVEL,
             owner: 'coolNickname',
             description: 'This is a legendary travel card!',
           },
           shop: {
             price: 1000,
-            totalQuantity: 10,
+            initialQuantity: 10,
             remainingQuantity: 5,
             exchangeInfo: {
-              grade: 'RARE',
-              genre: 'PORTRAIT',
+              grade: CardGrade.RARE,
+              genre: CardGenre.PORTRAIT,
               description: 'Looking to trade for portrait cards of rare grade',
             },
           },
