@@ -1,5 +1,12 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsInt, IsOptional, IsString, Min } from 'class-validator';
+import {
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  Min,
+  ValidateIf,
+} from 'class-validator';
 import { CardGenre, CardGrade } from '@prisma/client';
 // import { PartialType } from '@nestjs/mapped-types';
 // import { CreateShopDto } from './create-shop.dto';
@@ -12,11 +19,20 @@ export class UpdateShopDto {
   @Min(0)
   price?: number;
 
-  @ApiPropertyOptional({ description: '판매 수량', minimum: 0 })
+  @ApiPropertyOptional({ description: '판매 초기 수량', minimum: 0 })
   @IsOptional()
   @IsInt()
   @Min(0)
-  quantity?: number;
+  initialQuantity?: number;
+
+  @ApiPropertyOptional({ description: '판매 남은 수량', minimum: 0 })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @ValidateIf(
+    (o) => o.remainingQuantity !== undefined && o.initialQuantity !== undefined,
+  )
+  remainingQuantity?: number;
 
   @ApiPropertyOptional({
     enum: CardGrade,

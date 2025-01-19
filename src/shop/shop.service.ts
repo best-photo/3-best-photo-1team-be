@@ -1,9 +1,14 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateShopDto } from './dto/create-shop.dto';
 import { UpdateShopDto } from './dto/update-shop.dto';
 import { Card } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CardGrade, CardGenre } from '@prisma/client';
+import { ShopDetailsResponse } from './dto/shop.dto';
 
 @Injectable()
 export class ShopService {
@@ -54,7 +59,7 @@ export class ShopService {
   }
 
   // 판매 카드 상세 조회
-  async getShopDetails(shopId: string) {
+  async getShopDetails(shopId: string): Promise<ShopDetailsResponse> {
     const shop = await this.prisma.shop.findUnique({
       where: { id: shopId },
       include: {
@@ -72,18 +77,21 @@ export class ShopService {
     }
 
     return {
-      card: {
-        name: shop.card.name,
-        imageUrl: shop.card.imageUrl,
-        grade: shop.card.grade,
-        genre: shop.card.genre,
-        owner: shop.card.owner.nickname,
-        description: shop.card.description,
-      },
+      // 상점에 올렸는데 회원탈퇴한 경우 판매자 정보가 null이 될 수 있음
+      card: shop.card
+        ? {
+            name: shop.card.name,
+            imageUrl: shop.card.imageUrl,
+            grade: shop.card.grade,
+            genre: shop.card.genre,
+            owner: shop.card.owner?.nickname ?? '소유자 정보 없음',
+            description: shop.card.description,
+          }
+        : null,
       shop: {
         price: shop.price,
-        totalQuantity: shop.card.totalQuantity,
-        remainingQuantity: shop.card.remainingQuantity,
+        initialQuantity: shop.initialQuantity,
+        remainingQuantity: shop.remainingQuantity,
         exchangeInfo: {
           grade: shop.exchangeGrade,
           genre: shop.exchangeGenre,
@@ -95,77 +103,100 @@ export class ShopService {
 
   // 판매 정보 수정
   async update(id: string, updateShopDto: UpdateShopDto) {
-    // 판매 정보가 존재하는지 확인
-    const existingShop = await this.prisma.shop.findUnique({
-      where: { id },
-      include: {
-        card: true,
-      },
-    });
-
-    if (!existingShop) {
-      throw new NotFoundException('판매 정보를 찾을 수 없습니다.');
-    }
-
-    // 수량 변경시 검증
-    if (updateShopDto.quantity !== undefined) {
-      const quantityDiff = updateShopDto.quantity - existingShop.quantity;
-      const newRemainingQuantity =
-        existingShop.card.remainingQuantity - quantityDiff;
-
-      if (newRemainingQuantity < 0) {
-        throw new Error('재고가 부족합니다.');
-      }
-
-      // 카드의 남은 수량도 업데이트
-      await this.prisma.card.update({
-        where: { id: existingShop.cardId },
-        data: {
-          remainingQuantity: newRemainingQuantity,
-        },
-      });
-    }
-
-    // 판매 정보 업데이트
-    const updatedShop = await this.prisma.shop.update({
-      where: { id },
-      data: {
-        price: updateShopDto.price,
-        quantity: updateShopDto.quantity,
-        exchangeGrade: updateShopDto.exchangeGrade,
-        exchangeGenre: updateShopDto.exchangeGenre,
-        exchangeDescription: updateShopDto.exchangeDescription,
-      },
-      include: {
-        card: {
-          include: {
-            owner: true,
+    // 트랜잭션 적용
+    return this.prisma.$transaction(async (tx) => {
+      // 판매 정보가 존재하는지 확인
+      const existingShop = await tx.shop.findUnique({
+        where: { id },
+        include: {
+          card: {
+            include: {
+              owner: true,
+            },
           },
         },
-        seller: true,
-      },
-    });
+      });
 
-    return {
-      card: {
-        name: updatedShop.card.name,
-        imageUrl: updatedShop.card.imageUrl,
-        grade: updatedShop.card.grade,
-        genre: updatedShop.card.genre,
-        owner: updatedShop.card.owner.nickname,
-        description: updatedShop.card.description,
-      },
-      shop: {
-        price: updatedShop.price,
-        totalQuantity: updatedShop.card.totalQuantity,
-        remainingQuantity: updatedShop.card.remainingQuantity,
-        exchangeInfo: {
-          grade: updatedShop.exchangeGrade,
-          genre: updatedShop.exchangeGenre,
-          description: updatedShop.exchangeDescription,
+      if (!existingShop) {
+        throw new NotFoundException('판매 정보를 찾을 수 없습니다.');
+      }
+
+      // 수량 검증
+      if (updateShopDto.initialQuantity !== undefined) {
+        if (
+          updateShopDto.initialQuantity <
+          (updateShopDto.remainingQuantity ?? existingShop.remainingQuantity)
+        ) {
+          throw new BadRequestException(
+            '초기 수량은 남은 수량보다 작을 수 없습니다.',
+          );
+        }
+      }
+
+      if (
+        updateShopDto.initialQuantity != null &&
+        updateShopDto.remainingQuantity != null
+      ) {
+        if (updateShopDto.initialQuantity < updateShopDto.remainingQuantity) {
+          throw new BadRequestException(
+            '초기 수량은 남은 수량보다 작을 수 없습니다.',
+          );
+        }
+      }
+
+      if (updateShopDto.remainingQuantity !== undefined) {
+        if (
+          (updateShopDto.initialQuantity ?? existingShop.initialQuantity) <
+          updateShopDto.remainingQuantity
+        ) {
+          throw new BadRequestException(
+            '남은 수량은 초기 수량보다 클 수 없습니다.',
+          );
+        }
+      }
+
+      // 판매 정보 업데이트
+      const updatedShop = await tx.shop.update({
+        where: { id },
+        data: {
+          price: updateShopDto.price,
+          initialQuantity: updateShopDto.initialQuantity,
+          remainingQuantity: updateShopDto.remainingQuantity,
+          exchangeGrade: updateShopDto.exchangeGrade,
+          exchangeGenre: updateShopDto.exchangeGenre,
+          exchangeDescription: updateShopDto.exchangeDescription,
         },
-      },
-    };
+        include: {
+          card: {
+            include: {
+              owner: true,
+            },
+          },
+          seller: true,
+        },
+      });
+
+      return {
+        card: {
+          name: updatedShop.card.name,
+          imageUrl: updatedShop.card.imageUrl,
+          grade: updatedShop.card.grade,
+          genre: updatedShop.card.genre,
+          owner: updatedShop.card.owner.nickname,
+          description: updatedShop.card.description,
+        },
+        shop: {
+          price: updatedShop.price,
+          initialQuantity: updatedShop.initialQuantity,
+          remainingQuantity: updatedShop.remainingQuantity,
+          exchangeInfo: {
+            grade: updatedShop.exchangeGrade,
+            genre: updatedShop.exchangeGenre,
+            description: updatedShop.exchangeDescription,
+          },
+        },
+      };
+    });
   }
 
   // 판매 정보 삭제
@@ -173,6 +204,9 @@ export class ShopService {
     // 판매 정보가 존재하는지 확인
     const existingShop = await this.prisma.shop.findUnique({
       where: { id },
+      include: {
+        card: true,
+      },
     });
 
     if (!existingShop) {
