@@ -8,6 +8,9 @@ import {
   Delete,
   Query,
   NotFoundException,
+  UseGuards,
+  InternalServerErrorException,
+  BadRequestException,
 } from '@nestjs/common';
 import { ShopService } from './shop.service';
 import { CreateShopDto } from './dto/create-shop.dto';
@@ -24,6 +27,7 @@ import { GetUser } from 'src/auth/decorators/get-user.decorator';
 import { PurchaseResponseDto } from './dto/purchase-response.dto';
 import { PurchaseCardDto } from './dto/purchase-card.dto';
 import { CardGenre, CardGrade } from '@prisma/client';
+import { AuthGuard } from 'src/auth/auth.guard';
 
 @ApiTags('Shop')
 @Controller('shop')
@@ -191,13 +195,34 @@ export class ShopController {
     status: 400,
     description: '잔액 부족 또는 재고 부족',
   })
+  @UseGuards(AuthGuard)
   @Post('purchase')
   async purchaseCard(
     @Body() purchaseCardDto: PurchaseCardDto,
     @GetUser() user,
   ) {
     const { userId } = user;
-    return this.shopService.purchaseCard(userId, purchaseCardDto);
+    try {
+      return this.shopService.purchaseCard(userId, purchaseCardDto);
+    } catch (error) {
+      if (error) {
+        throw new BadRequestException({
+          message: '잔액이 부족합니다.',
+          currentBalance: error.currentBalance,
+          requiredAmount: error.requiredAmount,
+        });
+      }
+      if (error) {
+        throw new BadRequestException({
+          message: '재고가 부족합니다.',
+          requestedQuantity: error.requestedQuantity,
+          availableQuantity: error.availableQuantity,
+        });
+      }
+      throw new InternalServerErrorException(
+        '구매 처리 중 오류가 발생했습니다.',
+      );
+    }
   }
 
   // @Get('/user/:id')

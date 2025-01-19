@@ -9,7 +9,8 @@ import { Card } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CardGrade, CardGenre } from '@prisma/client';
 import { ShopDetailsResponse } from './dto/shop.dto';
-import { PurchaseCardDto, PurchaseResponseDto } from './dto/purchase-card.dto';
+import { PurchaseCardDto } from './dto/purchase-card.dto';
+import { PurchaseResponseDto } from './dto/purchase-response.dto';
 
 @Injectable()
 export class ShopService {
@@ -299,7 +300,7 @@ export class ShopService {
         ...statusFilter,
       },
       include: {
-        shop: true,
+        Shop: true,
         owner: {
           select: {
             nickname: true,
@@ -311,7 +312,7 @@ export class ShopService {
 
     return cards.map((card) => ({
       ...card,
-      quantity: card.shop?.quantity || null,
+      quantity: card.Shop?.quantity || null,
       createdAt: card.shop?.createdAt || card.createdAt,
     }));
   }
@@ -421,7 +422,7 @@ export class ShopService {
         throw new BadRequestException('잔액이 부족합니다.');
       }
 
-      // 4. 포인트 차감
+      // 4. 구매자 포인트 차감
       const updatedBuyerPoint = await prisma.point.update({
         where: {
           userId,
@@ -435,8 +436,20 @@ export class ShopService {
       });
 
       // 5. 판매자 포인트 추가
-      await prisma.point.update({
+      // 판매자 포인트 역시 동시에 여러 거래가 발생할 수 있으므로 낙관적 락킹을 사용
+      const sellerPoint = await prisma.point.findUnique({
         where: { userId: shop.sellerId },
+      });
+
+      if (!sellerPoint) {
+        throw new NotFoundException('판매자 포인트 정보를 찾을 수 없습니다.');
+      }
+
+      await prisma.point.update({
+        where: {
+          userId: shop.sellerId,
+          balance: sellerPoint.balance, // 낙관적 락킹 조건 추가
+        },
         data: {
           balance: {
             increment: totalPrice,
@@ -464,7 +477,10 @@ export class ShopService {
 
       // 7. Shop의 재고 업데이트
       await prisma.shop.update({
-        where: { id: shopId },
+        where: {
+          id: shopId,
+          remainingQuantity: shop.remainingQuantity, // 낙관적 락킹을 위한 조건, 재고 수량이 변경되었을 경우 업데이트가 실패함
+        },
         data: {
           remainingQuantity: {
             decrement: quantity,
@@ -512,7 +528,6 @@ export class ShopService {
         // 새로운 카드를 생성하는 경우
         await prisma.card.create({
           data: {
-            id: shop.cardId,
             ownerId: userId,
             name: sellerCard.name,
             price: sellerCard.price,
