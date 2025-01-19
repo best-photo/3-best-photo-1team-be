@@ -5,6 +5,7 @@ export default class StockStateFilterService extends BaseFilterService {
     const inStockCount = await Promise.all([
       this.prisma.shop.count({
         where: {
+          sellerId: userId,
           remainingQuantity: { gt: 0 },
         },
       }),
@@ -17,6 +18,7 @@ export default class StockStateFilterService extends BaseFilterService {
 
     const outOfStockCount = await this.prisma.shop.count({
       where: {
+        sellerId: userId,
         remainingQuantity: { equals: 0 },
       },
     });

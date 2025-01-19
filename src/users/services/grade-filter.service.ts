@@ -3,39 +3,37 @@ import { CardGrade } from '@prisma/client';
 
 export default class GradeFilterService extends BaseFilterService {
   async execute(userId: string): Promise<FilterResult> {
-    const shopCounts = await Promise.all(
-      Object.values(CardGrade).map((grade) =>
-        this.prisma.shop.count({
-          where: {
-            card: {
-              grade,
-              ownerId: userId,
+    const grades = Object.values(CardGrade);
+    const results = await Promise.all(
+      grades.map(async (grade) => {
+        const [shopCount, exchangeCount] = await Promise.all([
+          this.prisma.shop.count({
+            where: {
+              card: {
+                grade,
+                ownerId: userId,
+              },
             },
-          },
-        }),
-      ),
+          }),
+          this.prisma.exchange.count({
+            where: {
+              offeredCard: {
+                grade,
+                ownerId: userId,
+              },
+            },
+          }),
+        ]);
+        return { grade, count: shopCount + exchangeCount };
+      }),
     );
 
-    const exchangeCounts = await Promise.all(
-      Object.values(CardGrade).map((grade) =>
-        this.prisma.exchange.count({
-          where: {
-            offeredCard: {
-              grade,
-              ownerId: userId,
-            },
-          },
-        }),
-      ),
-    );
-
-    const gradeResult = Object.values(CardGrade).reduce((acc, grade, index) => {
-      return {
+    return results.reduce(
+      (acc, { grade, count }) => ({
         ...acc,
-        [grade]: shopCounts[index] + exchangeCounts[index],
-      };
-    }, {});
-
-    return gradeResult;
+        [grade]: count,
+      }),
+      {},
+    );
   }
 }
