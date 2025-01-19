@@ -32,13 +32,18 @@ import { Express } from 'express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { existsSync, mkdirSync } from 'fs';
-import { GetMyCardsRequestDto } from 'src/cards/dto/sellingCards/my-selling-card.dto';
+import {
+  GetMyCardsCountRequestDto,
+  GetMyCardsRequestDto,
+} from 'src/cards/dto/sellingCards/my-selling-card.dto';
+import FilterServiceFactory from './services/filter-factory.service';
 
 @Controller('users')
 export class UsersController {
   constructor(
     private readonly usersService: UsersService,
     private readonly authService: AuthService,
+    private readonly filterServiceFactory: FilterServiceFactory,
   ) {}
 
   // 내 프로필 조회
@@ -260,7 +265,7 @@ export class UsersController {
 
       // 카드 생성 서비스 호출
       return this.usersService.createCard(user.userId, createCardDto);
-    } catch (error) {
+    } catch {
       throw new InternalServerErrorException(
         '파일 업로드 중 오류가 발생했습니다.',
       );
@@ -319,34 +324,48 @@ export class UsersController {
     );
   }
 
-  @Get('my-cards/:userId/:cardId')
-  @UseGuards(AuthGuard) // 인증된 사용자만 접근할 수 있도록
-  @ApiOperation({
-    summary: 'Get card details by card ID',
-    description: "Fetch a card by its ID along with the owner's nickname",
-  })
+  @Get('my-cards/sales/count')
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: '내 카드 수량 조회' })
   @ApiResponse({
     status: 200,
-    description: 'Card details fetched successfully',
+    description: '조회 성공',
   })
   @ApiResponse({
-    status: 404,
-    description: 'Card not found',
+    status: 400,
+    description: '잘못된 요청 데이터',
   })
-  async getCardById(
-    @Param('userId') userId: string, // userId 파라미터를 추가로 받음
-    @Param('cardId') cardId: string, // cardId 파라미터를 추가로 받음
-    @GetUser() user: { userId: string }, // 인증된 유저 정보
+  @ApiResponse({
+    status: 401,
+    description: '인증 정보가 존재하지 않습니다.',
+  })
+  @ApiResponse({
+    status: 500,
+    description: '내 카드 조회 중 오류가 발생했습니다.',
+  })
+  @ApiQuery({
+    name: 'filter',
+    enum: ['grade', 'genre', 'salesMethod', 'stockState'],
+    required: true,
+    description: '필터 타입',
+  })
+  async getSellingCardsCount(
+    @GetUser() user: { userId: string },
+    @Query() params: GetMyCardsCountRequestDto,
   ) {
-    // 유저 아이디와 카드 아이디가 모두 받아졌으므로, 서비스로 전달하여 카드 정보를 조회합니다.
-    return this.usersService.getCardById(cardId, userId); // userId와 cardId 모두 전달
-  }
-
-  @Get('card-info')
-  @UseGuards(AuthGuard) // JWT 인증 가드 (필요한 경우)
-  async getUserPhotoCardInfo(@GetUser() user: { userId: string }) {
-    const { userId } = user;
-    return this.usersService.getUserPhotoCardInfo(userId);
+    try {
+      const filterService = this.filterServiceFactory.getService(params.filter);
+      return await filterService.execute(user.userId);
+    } catch (error) {
+      if (error instanceof PrismaClientKnownRequestError) {
+        throw new InternalServerErrorException(
+          '데이터베이스 조회 중 오류가 발생했습니다.',
+        );
+      }
+      throw new InternalServerErrorException(
+        '판매 카드 조회 중 오류가 발생했습니다.',
+      );
+    }
   }
 
   @Get('my-cards/sales')
@@ -384,5 +403,35 @@ export class UsersController {
         '판매 카드 조회 중 오류가 발생했습니다.',
       );
     }
+  }
+
+  @Get('my-cards/:userId/:cardId')
+  @UseGuards(AuthGuard) // 인증된 사용자만 접근할 수 있도록
+  @ApiOperation({
+    summary: 'Get card details by card ID',
+    description: "Fetch a card by its ID along with the owner's nickname",
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Card details fetched successfully',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Card not found',
+  })
+  async getCardById(
+    @Param('userId') userId: string, // userId 파라미터를 추가로 받음
+    @Param('cardId') cardId: string, // cardId 파라미터를 추가로 받음
+    @GetUser() user: { userId: string }, // 인증된 유저 정보
+  ) {
+    // 유저 아이디와 카드 아이디가 모두 받아졌으므로, 서비스로 전달하여 카드 정보를 조회합니다.
+    return this.usersService.getCardById(cardId, userId); // userId와 cardId 모두 전달
+  }
+
+  @Get('card-info')
+  @UseGuards(AuthGuard) // JWT 인증 가드 (필요한 경우)
+  async getUserPhotoCardInfo(@GetUser() user: { userId: string }) {
+    const { userId } = user;
+    return this.usersService.getUserPhotoCardInfo(userId);
   }
 }
