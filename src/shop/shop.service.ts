@@ -4,6 +4,7 @@ import { UpdateShopDto } from './dto/update-shop.dto';
 import { Card } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CardGrade, CardGenre } from '@prisma/client';
+import { ShopDetailsResponse } from './dto/shop.dto';
 
 @Injectable()
 export class ShopService {
@@ -54,7 +55,7 @@ export class ShopService {
   }
 
   // 판매 카드 상세 조회
-  async getShopDetails(shopId: string) {
+  async getShopDetails(shopId: string): Promise<ShopDetailsResponse> {
     const shop = await this.prisma.shop.findUnique({
       where: { id: shopId },
       include: {
@@ -82,8 +83,8 @@ export class ShopService {
       },
       shop: {
         price: shop.price,
-        totalQuantity: shop.card.totalQuantity,
-        remainingQuantity: shop.card.remainingQuantity,
+        initialQuantity: shop.initialQuantity,
+        remainingQuantity: shop.remainingQuantity,
         exchangeInfo: {
           grade: shop.exchangeGrade,
           genre: shop.exchangeGenre,

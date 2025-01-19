@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { createId } from '@paralleldrive/cuid2';
+import { CardGenre, CardGrade } from '@prisma/client';
 import { IsInt, Min } from 'class-validator';
 
 export class ShopDTO {
@@ -42,19 +43,19 @@ export class ShopDetailsResponse {
   card: {
     name: string;
     imageUrl: string;
-    grade: string;
-    genre: string;
+    grade: CardGrade;
+    genre: CardGenre;
     owner: string; // 닉네임
-    description: string;
+    description?: string | null;
   };
   shop: {
     price: number;
-    totalQuantity: number;
+    initialQuantity: number;
     remainingQuantity: number;
     exchangeInfo: {
-      grade: string;
-      genre: string;
-      description: string;
+      grade: CardGrade;
+      genre: CardGenre;
+      description?: string | null;
     };
   };
 }
