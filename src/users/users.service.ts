@@ -16,7 +16,7 @@ import {
 } from './dto/user.dto';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { CreateCardDto } from 'src/cards/dto/create-card.dto';
-import { Card, CardGenre, CardGrade, Prisma, User } from '@prisma/client';
+import { CardGenre, CardGrade, Prisma, User } from '@prisma/client';
 import {
   GetMyCardsRequestDto,
   GetMySellingCardResponseDto,
@@ -328,8 +328,8 @@ export class UsersService {
 
   async getMySellingCards(userId: string, params: GetMyCardsRequestDto) {
     const { grade, genre, stockState, salesMethod, keyword } = params;
-    const page = Number(params.page) ?? 1;
-    const limit = Number(params.limit) ?? 30;
+    const page = Number(params.page) || 1;
+    const limit = Number(params.limit) || 30;
     const skip = (page - 1) * limit;
 
     const cardWhere = {
