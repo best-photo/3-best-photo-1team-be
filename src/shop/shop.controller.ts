@@ -8,6 +8,7 @@ import {
   Delete,
   Query,
   NotFoundException,
+  Req,
 } from '@nestjs/common';
 import { ShopService } from './shop.service';
 import { CreateShopDto } from './dto/create-shop.dto';
@@ -20,6 +21,9 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { ShopDetailsResponse } from './dto/shop.dto';
+import { GetUser } from 'src/auth/decorators/get-user.decorator';
+import { PurchaseResponseDto } from './dto/purchase-response.dto';
+import { PurchaseCardDto } from './dto/purchase-card.dto';
 
 @ApiTags('Shop')
 @Controller('shop')
@@ -174,6 +178,26 @@ export class ShopController {
       throw new NotFoundException('카드를 찾을 수 없습니다.');
     }
     return card;
+  }
+
+  // 판매 포토 카드 구매
+  @ApiOperation({ summary: '포토 카드 구매' })
+  @ApiResponse({
+    status: 201,
+    description: '포토 카드 구매 성공',
+    type: PurchaseResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: '잔액 부족 또는 재고 부족',
+  })
+  @Post('purchase')
+  async purchaseCard(
+    @Body() purchaseCardDto: PurchaseCardDto,
+    @GetUser() user,
+  ) {
+    const { userId } = user;
+    return this.shopService.purchaseCard(userId, purchaseCardDto);
   }
 
   // @Get('/user/:id')

@@ -1,9 +1,14 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateShopDto } from './dto/create-shop.dto';
 import { UpdateShopDto } from './dto/update-shop.dto';
 import { Card } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CardGrade, CardGenre } from '@prisma/client';
+import { PurchaseCardDto } from './dto/purchase-card.dto';
 
 @Injectable()
 export class ShopService {
@@ -341,7 +346,132 @@ export class ShopService {
     return card;
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} shop`;
+  // 판매 포토 카드 구매
+  async purchaseCard(userId: string, purchaseCardDto: PurchaseCardDto) {
+    const { shopId, quantity } = purchaseCardDto;
+
+    // 트랜잭션 시작
+    return await this.prisma.$transaction(async (prisma) => {
+      // 1. 상점 정보 조회
+      const shop = await prisma.shop.findUnique({
+        where: { id: shopId },
+        include: {
+          card: true,
+          seller: true,
+        },
+      });
+
+      // 상점 정보가 없으면 에러 발생
+      if (!shop) {
+        throw new NotFoundException('상점을 찾을 수 없습니다.');
+      }
+
+      // 자신의 카드는 구매할 수 없음
+      if (shop.sellerId === userId) {
+        throw new BadRequestException('자신의 카드는 구매할 수 없습니다.');
+      }
+
+      // 2. 재고 확인
+      if (shop.card.remainingQuantity < quantity) {
+        throw new Error('재고가 부족합니다.');
+      }
+
+      // 3. 구매자의 포인트 잔액 확인
+      const buyerPoint = await prisma.point.findUnique({
+        where: { userId },
+      });
+
+      if (!buyerPoint) {
+        throw new NotFoundException('구매자 포인트 정보를 찾을 수 없습니다.');
+      }
+
+      const totalPrice = shop.price * quantity;
+
+      if (buyerPoint.balance < totalPrice) {
+        throw new BadRequestException('잔액이 부족합니다.');
+      }
+
+      // 4. 포인트 차감
+      const updatedBuyerPoint = await prisma.point.update({
+        where: {
+          userId,
+          balance: buyerPoint.balance, // 낙관적 락킹을 위한 조건
+        },
+        data: {
+          // 동시성 문제 있음
+          // balance: {
+          //   decrement: buyerPoint.balance - totalPrice,
+          // },
+          balance: {
+            decrement: totalPrice,
+          },
+        },
+      });
+
+      // 5. 판매자 포인트 추가
+      await prisma.point.update({
+        where: { userId: shop.sellerId },
+        data: {
+          balance: {
+            increment: totalPrice,
+          },
+        },
+      });
+
+      // 6. 판매자 포인트 이력 생성
+      await prisma.pointHistory.create({
+        data: {
+          userId: shop.sellerId,
+          points: totalPrice,
+          pointType: 'PURCHASE',
+        },
+      });
+
+      // 6. 구매자 포인트 이력 생성
+      await prisma.pointHistory.create({
+        data: {
+          userId: userId,
+          points: -totalPrice,
+          pointType: 'PURCHASE',
+        },
+      });
+
+      // 7. 카드 재고 업데이트
+      await prisma.card.update({
+        where: { id: shop.cardId },
+        data: {
+          remainingQuantity: {
+            decrement: quantity,
+          },
+        },
+      });
+
+      // 8. 구매 기록 생성
+      const purchase = await prisma.purchase.create({
+        data: {
+          buyerId: userId,
+          cardId: shop.cardId,
+        },
+      });
+
+      // 9. 구매 알림 생성
+      await prisma.notification.create({
+        data: {
+          userId: shop.sellerId,
+          content: `회원님의 카드 "${shop.card.name}"가 ${quantity}개 판매되었습니다.`,
+        },
+      });
+
+      return {
+        message: '구매가 완료되었습니다.',
+        data: {
+          purchaseId: purchase.id,
+          cardName: shop.card.name,
+          quantity,
+          totalPrice,
+          remainingPoints: updatedBuyerPoint.balance,
+        },
+      };
+    });
   }
 }
