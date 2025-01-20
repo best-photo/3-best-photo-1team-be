@@ -291,36 +291,17 @@ export class UsersController {
     required: false,
     description: 'Filter by card genre (optional)',
   })
-  @ApiQuery({
-    name: 'page',
-    required: false,
-    description: 'Page number (optional)',
-    example: '1',
-  })
-  @ApiQuery({
-    name: 'limit',
-    required: false,
-    description: 'Number of items per page (optional)',
-    example: '10',
-  })
   async getMyCards(
     @GetUser() user: { userId: string },
     @Query('search') search?: string, // Optional
     @Query('sortGrade') sortGrade?: CardGrade, // Prisma enum
     @Query('sortGenre') sortGenre?: CardGenre, // Prisma enum
-    @Query('page') page: string = '1',
-    @Query('limit') limit: string = '10',
   ) {
-    const pageNum = parseInt(page, 10);
-    const limitNum = parseInt(limit, 10);
-
     return this.usersService.getUserCards(
       user.userId,
       search || '',
       sortGrade || '',
       sortGenre || '',
-      pageNum,
-      limitNum,
     );
   }
 

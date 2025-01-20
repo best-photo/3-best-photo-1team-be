@@ -88,10 +88,34 @@ export class ShopController {
       },
     },
   })
-  // @Get(':id')
-  // async getShopDetails(@Param('id') shopId: string) {
-  //   return this.shopService.getShopDetails(shopId);
-  // }
+  @Get('all')
+  async findAllShops() {
+    return await this.shopService.getAllShops();
+  }
+
+  @Get('successOrFail/:id')
+  async getCardWithShop(@Param('id') cardId: string) {
+    return this.shopService.getCardWithShop(cardId);
+  }
+
+  @Get('cards')
+  async findAll(
+    @Query('query') query?: string,
+    @Query('grade') grade?: 'COMMON' | 'RARE' | 'superRare' | 'LEGENDARY',
+    @Query('genre') genre?: 'TRAVEL' | 'LANDSCAPE' | 'PORTRAIT' | 'OBJECT',
+    @Query('status') status?: 'IN_STOCK' | 'OUT_OF_STOCK',
+    @Query('placeOrder')
+    placeOrder?: '최신순' | '오래된 순' | '높은 가격순' | '낮은 가격순',
+  ) {
+    const filters = { query, grade, genre, status, placeOrder };
+
+    return await this.shopService.findAll(filters);
+  }
+
+  @Get(':id')
+  async getShopDetails(@Param('id') shopId: string) {
+    return this.shopService.getShopDetails(shopId);
+  }
   @ApiOperation({ summary: '판매 포토 카드 정보 수정' })
   @ApiParam({
     name: 'id',
@@ -133,30 +157,6 @@ export class ShopController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.shopService.remove(id);
-  }
-
-  @Get('all')
-  async findAllShops() {
-    return await this.shopService.getAllShops();
-  }
-
-  @Get('successOrFail/:id')
-  async getCardWithShop(@Param('id') cardId: string) {
-    return this.shopService.getCardWithShop(cardId);
-  }
-
-  @Get('cards')
-  async findAll(
-    @Query('query') query?: string,
-    @Query('grade') grade?: 'COMMON' | 'RARE' | 'superRare' | 'LEGENDARY',
-    @Query('genre') genre?: 'TRAVEL' | 'LANDSCAPE' | 'PORTRAIT' | 'OBJECT',
-    @Query('status') status?: 'IN_STOCK' | 'OUT_OF_STOCK',
-    @Query('placeOrder')
-    placeOrder?: '최신순' | '오래된 순' | '높은 가격순' | '낮은 가격순',
-  ) {
-    const filters = { query, grade, genre, status, placeOrder };
-
-    return await this.shopService.findAll(filters);
   }
 
   @Get('/cards/:id')

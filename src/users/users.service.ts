@@ -197,11 +197,7 @@ export class UsersService {
     search: string = '',
     sortGrade: CardGrade | '' = '',
     sortGenre: CardGenre | '' = '',
-    page: number = 1,
-    limit: number = 10,
   ) {
-    const skip = (page - 1) * limit;
-
     const where: Prisma.CardWhereInput = {
       ownerId: userId,
       ...(search && { name: { contains: search, mode: 'insensitive' } }),
@@ -211,24 +207,16 @@ export class UsersService {
 
     console.log('WHERE CONDITIONS:', where); // 조건 확인
 
-    const [cards, totalCount] = await Promise.all([
-      this.prisma.card.findMany({
-        where,
-        skip,
-        take: limit,
-        include: {
-          owner: {
-            // 'owner' 필드를 포함시켜서 User 테이블에서 nickname을 가져옵니다
-            select: {
-              nickname: true, // 'nickname'만 선택하여 불러옵니다
-            },
+    const cards = await this.prisma.card.findMany({
+      where,
+      include: {
+        owner: {
+          select: {
+            nickname: true,
           },
         },
-      }),
-      this.prisma.card.count({
-        where,
-      }),
-    ]);
+      },
+    });
 
     // 카드를 반환하면서, `nickname`을 각 카드에 포함시켜줍니다
     const cardsWithNickname = cards.map((card) => ({
@@ -238,9 +226,6 @@ export class UsersService {
 
     return {
       cards: cardsWithNickname,
-      totalCount,
-      totalPages: Math.ceil(totalCount / limit),
-      currentPage: page,
     };
   }
 
@@ -278,28 +263,24 @@ export class UsersService {
     const user: User | null = await this.prisma.user.findUnique({
       where: { id: userId },
     });
-
+  
     if (!user) {
       throw new NotFoundException('사용자를 찾을 수 없습니다.');
     }
-
+  
     // 사용자가 가진 모든 카드 조회
-    const cardCounts = await this.prisma.card.groupBy({
-      by: ['grade'],
+    const cards = await this.prisma.card.findMany({
       where: { ownerId: userId },
-      _count: {
-        grade: true,
-      },
     });
-
+  
     // 각 등급별 카운트 초기화
     let common = 0;
     let rare = 0;
     let superRare = 0;
     let legendary = 0;
-
+  
     // 카드의 등급별 개수 계산
-    cardCounts.forEach((card) => {
+    cards.forEach((card) => {
       switch (card.grade.toUpperCase()) {
         case 'COMMON':
           common++;
@@ -313,9 +294,13 @@ export class UsersService {
         case 'LEGENDARY':
           legendary++;
           break;
+        default:
+          // 등급이 없는 경우 처리할 수 있습니다 (선택적)
+          console.log(`Unknown grade for card: ${card.grade}`);
+          break;
       }
     });
-
+  
     // 반환할 데이터 객체 생성
     return {
       nickname: user.nickname, // 사용자 닉네임 반환
@@ -324,7 +309,7 @@ export class UsersService {
       superRare,
       legendary,
     };
-  }
+  }  
 
   async getMySellingCards(userId: string, params: GetMyCardsRequestDto) {
     const { grade, genre, stockState, salesMethod, keyword } = params;
@@ -353,11 +338,28 @@ export class UsersService {
     let exchangeTotal = 0;
 
     if (!salesMethod || salesMethod === 'SALE') {
+      const shopWhere = {
+        sellerId: userId,
+        ...(stockState && {
+          remainingQuantity:
+            stockState === 'IN_STOCK' ? { gt: 0 } : { equals: 0 },
+        }),
+        card: {
+          ...(grade && { grade }),
+          ...(genre && { genre }),
+          ...(keyword && {
+            OR: [
+              { name: { contains: keyword } },
+              { description: { contains: keyword } },
+            ],
+          }),
+        },
+      };
+
       [sellingCards, shopTotal] = await Promise.all([
         this.prisma.shop.findMany({
           where: {
-            sellerId: userId,
-            card: cardWhere,
+            ...shopWhere,
           },
           select: {
             id: true,
@@ -374,6 +376,7 @@ export class UsersService {
                 description: true,
                 grade: true,
                 genre: true,
+                imageUrl: true,
                 owner: {
                   select: {
                     nickname: true,
@@ -413,6 +416,7 @@ export class UsersService {
                 price: true,
                 grade: true,
                 genre: true,
+                imageUrl: true,
                 owner: {
                   select: {
                     nickname: true,

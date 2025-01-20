@@ -38,12 +38,20 @@ export class GetMyExchangeCardResponseDto extends CardDto {
   @IsString()
   state: 'exchange';
 
+  @ApiProperty({
+    nullable: false,
+    description: '카드 이미지',
+  })
+  @IsString()
+  imageUrl: string;
+
   static of(exchange: ExchangeWithRelations): GetMyExchangeCardResponseDto {
     const response = new GetMyExchangeCardResponseDto();
     response.targetId = exchange.targetCardId;
     response.id = exchange.offeredCard.id;
     response.ownerId = exchange.requesterId;
     response.name = exchange.offeredCard.name;
+    response.imageUrl = exchange.offeredCard.imageUrl;
     response.description = exchange.offeredCard.description;
     response.grade = exchange.offeredCard.grade;
     response.genre = exchange.offeredCard.genre;
