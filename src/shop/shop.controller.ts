@@ -88,10 +88,10 @@ export class ShopController {
       },
     },
   })
-  // @Get(':id')
-  // async getShopDetails(@Param('id') shopId: string) {
-  //   return this.shopService.getShopDetails(shopId);
-  // }
+  @Get(':id')
+  async getShopDetails(@Param('id') shopId: string) {
+    return this.shopService.getShopDetails(shopId);
+  }
   @ApiOperation({ summary: '판매 포토 카드 정보 수정' })
   @ApiParam({
     name: 'id',
@@ -201,6 +201,8 @@ export class ShopController {
     @GetUser() user,
   ) {
     const { userId } = user;
+    console.log('User ID:', userId);
+    console.log('Purchase DTO:', purchaseCardDto);
     try {
       return this.shopService.purchaseCard(userId, purchaseCardDto);
     } catch (error) {

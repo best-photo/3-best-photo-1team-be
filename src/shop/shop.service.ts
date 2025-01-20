@@ -62,47 +62,47 @@ export class ShopService {
   }
 
   // 판매 카드 상세 조회
-  // async getShopDetails(shopId: string): Promise<ShopDetailsResponse> {
-  //   const shop = await this.prisma.shop.findUnique({
-  //     where: { id: shopId },
-  //     include: {
-  //       card: {
-  //         include: {
-  //           owner: true, // 카드 소유자 정보
-  //         },
-  //       },
-  //       seller: true, // 판매자 정보
-  //     },
-  //   });
+  async getShopDetails(shopId: string): Promise<ShopDetailsResponse> {
+    const shop = await this.prisma.shop.findUnique({
+      where: { id: shopId },
+      include: {
+        card: {
+          include: {
+            owner: true, // 카드 소유자 정보
+          },
+        },
+        seller: true, // 판매자 정보
+      },
+    });
 
-  //   if (!shop) {
-  //     throw new NotFoundException('판매 정보를 찾을 수 없습니다.');
-  //   }
+    if (!shop) {
+      throw new NotFoundException('판매 정보를 찾을 수 없습니다.');
+    }
 
-  //   return {
-  //     // 상점에 올렸는데 회원탈퇴한 경우 판매자 정보가 null이 될 수 있음
-  //     card: shop.card
-  //       ? {
-  //           name: shop.card.name,
-  //           imageUrl: shop.card.imageUrl,
-  //           grade: shop.card.grade,
-  //           genre: shop.card.genre,
-  //           owner: shop.card.owner?.nickname ?? '소유자 정보 없음',
-  //           description: shop.card.description,
-  //         }
-  //       : null,
-  //     shop: {
-  //       price: shop.price,
-  //       initialQuantity: shop.initialQuantity,
-  //       remainingQuantity: shop.remainingQuantity,
-  //       exchangeInfo: {
-  //         grade: shop.exchangeGrade,
-  //         genre: shop.exchangeGenre,
-  //         description: shop.exchangeDescription,
-  //       },
-  //     },
-  //   };
-  // }
+    return {
+      // 상점에 올렸는데 회원탈퇴한 경우 판매자 정보가 null이 될 수 있음
+      card: shop.card
+        ? {
+            name: shop.card.name,
+            imageUrl: shop.card.imageUrl,
+            grade: shop.card.grade,
+            genre: shop.card.genre,
+            owner: shop.card.owner?.nickname ?? '소유자 정보 없음',
+            description: shop.card.description,
+          }
+        : null,
+      shop: {
+        price: shop.price,
+        initialQuantity: shop.initialQuantity,
+        remainingQuantity: shop.remainingQuantity,
+        exchangeInfo: {
+          grade: shop.exchangeGrade,
+          genre: shop.exchangeGenre,
+          description: shop.exchangeDescription,
+        },
+      },
+    };
+  }
 
   // 판매 정보 수정
   async update(id: string, updateShopDto: UpdateShopDto) {
@@ -394,6 +394,11 @@ export class ShopService {
   // 판매 포토 카드 구매
   async purchaseCard(userId: string, purchaseCardDto: PurchaseCardDto) {
     const { shopId, quantity } = purchaseCardDto;
+    console.log('shopId : ', shopId);
+
+    if (!shopId) {
+      throw new BadRequestException('shopId가 유효하지 않습니다.');
+    }
 
     // 트랜잭션 시작
     return await this.prisma.$transaction(async (prisma) => {
