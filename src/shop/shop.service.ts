@@ -76,7 +76,6 @@ export class ShopService {
               include: {
                 offeredCard: true,
                 requester: true,
-                description: true,
               },
             },
           },
@@ -89,23 +88,14 @@ export class ShopService {
       throw new NotFoundException('판매 정보를 찾을 수 없습니다.');
     }
 
-    const offeredExchanges =
-      shop.card?.targetExchanges
-        ?.filter((exchange) => exchange.requester.id === requesterId) // 요청자가 올린 교환 요청만 필터링
-        .map((exchange) => ({
-          card: {
-            name: exchange.offeredCard.name,
-            imageUrl: exchange.offeredCard.imageUrl,
-            grade: exchange.offeredCard.grade,
-            genre: exchange.offeredCard.genre,
-            description: exchange.offeredCard.description,
-          },
-          description: exchange.description,
-          status: exchange.status,
-        })) ?? [];
+    // shop.card가 undefined인 경우를 대비한 타입 가드
+    if (!shop.card) {
+      throw new NotFoundException('카드 정보를 찾을 수 없습니다.');
+    }
 
-    const targetExchanges =
-      shop.card?.targetExchanges.map((exchange) => ({
+    const offeredExchanges = shop.card.targetExchanges
+      .filter((exchange) => exchange.requester.id === requesterId)
+      .map((exchange) => ({
         card: {
           name: exchange.offeredCard.name,
           imageUrl: exchange.offeredCard.imageUrl,
@@ -113,23 +103,32 @@ export class ShopService {
           genre: exchange.offeredCard.genre,
           description: exchange.offeredCard.description,
         },
-        requester: exchange.requester.nickname,
         description: exchange.description,
         status: exchange.status,
-      })) ?? [];
+      }));
+
+    const targetExchanges = shop.card.targetExchanges.map((exchange) => ({
+      card: {
+        name: exchange.offeredCard.name,
+        imageUrl: exchange.offeredCard.imageUrl,
+        grade: exchange.offeredCard.grade,
+        genre: exchange.offeredCard.genre,
+        description: exchange.offeredCard.description,
+      },
+      requester: exchange.requester.nickname,
+      description: exchange.description,
+      status: exchange.status,
+    }));
 
     return {
-      // 상점에 올렸는데 회원탈퇴한 경우 판매자 정보가 null이 될 수 있음
-      card: shop.card
-        ? {
-            name: shop.card.name,
-            imageUrl: shop.card.imageUrl,
-            grade: shop.card.grade,
-            genre: shop.card.genre,
-            owner: shop.card.owner?.nickname ?? '소유자 정보 없음',
-            description: shop.card.description,
-          }
-        : null,
+      card: {
+        name: shop.card.name,
+        imageUrl: shop.card.imageUrl,
+        grade: shop.card.grade,
+        genre: shop.card.genre,
+        owner: shop.card.owner?.nickname ?? '소유자 정보 없음',
+        description: shop.card.description,
+      },
       shop: {
         price: shop.price,
         initialQuantity: shop.initialQuantity,
