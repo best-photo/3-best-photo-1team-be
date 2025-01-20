@@ -175,7 +175,7 @@ export class UsersController {
           const timestamp = Date.now();
           //파일 확장자 보안 검사
           const fileExtension = extname(file.originalname).toLowerCase();
-          if (!['.jpg', '.jpeg', '.png'].includes(fileExtension)) {
+          if (!['.jpg', '.jpeg', '.png', 'webp'].includes(fileExtension)) {
             return callback(
               new BadRequestException('지원하지 않는 파일 형식입니다'),
               null,
@@ -261,7 +261,7 @@ export class UsersController {
       const imageUrlPath = imageUrl.path;
 
       // DTO에 이미지 URL 추가
-      createCardDto.imageUrl = imageUrlPath;
+      createCardDto.imageUrl = `${process.env.SERVER_ADDRESS}/${imageUrlPath}`;
 
       // 카드 생성 서비스 호출
       return this.usersService.createCard(user.userId, createCardDto);
