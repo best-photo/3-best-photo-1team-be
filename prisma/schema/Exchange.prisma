@@ -32,4 +32,6 @@ enum ExchangeStatus {
   REJECTED  @map("rejected")
   /// 교환 완료
   COMPLETED @map("completed")
+  /// 교환 취소
+  CANCELLED  @map("cancelled")
 }
