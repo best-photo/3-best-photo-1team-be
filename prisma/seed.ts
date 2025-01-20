@@ -236,7 +236,7 @@ async function main() {
     }),
   );
 
-  // 교환 요청
+  //교환 요청
   await Promise.all(
     user1Cards.slice(0, 25).map((card) =>
       prisma.exchange.create({
