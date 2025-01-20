@@ -23,6 +23,13 @@ model Exchange {
 }
 
 /// 교환 상태
+/// 교환 상태
+/// 가능한 상태 전이:
+/// - REQUESTED -> ACCEPTED | REJECTED | CANCELLED
+/// - ACCEPTED -> COMPLETED | CANCELLED
+/// - REJECTED -> (최종 상태)
+/// - CANCELLED -> (최종 상태)
+/// - COMPLETED -> (최종 상태)
 enum ExchangeStatus {
   /// 교환 요청
   REQUESTED @map("requested")
@@ -30,8 +37,8 @@ enum ExchangeStatus {
   ACCEPTED  @map("accepted")
   /// 교환 거절
   REJECTED  @map("rejected")
+  /// 교환 취소
+  CANCELLED @map("cancelled")
   /// 교환 완료
   COMPLETED @map("completed")
-  /// 교환 취소
-  CANCELLED  @map("cancelled")
 }

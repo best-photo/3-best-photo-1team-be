@@ -202,7 +202,7 @@ export class CardsService {
       // 4. 교환 요청자에 알림 생성
       await tx.notification.create({
         data: {
-          userId: exchange.requesterId,
+          userId: exchange.requesterId, // 교환 요청자에게 알림
           content: `${shop.card.name} 카드와의 교환 제안이 수락되었습니다.`,
         },
       });
@@ -211,7 +211,7 @@ export class CardsService {
       await tx.card.update({
         where: { id: exchange.offeredCardId },
         data: {
-          ownerId: exchange.requesterId,
+          ownerId: shop.sellerId, // 상점 소유자에게 카드 소유권 이전
         },
       });
 
@@ -360,11 +360,6 @@ export class CardsService {
       if (!exchange) {
         throw new NotFoundException('교환 요청을 찾을 수 없습니다.');
       }
-
-      // FIXME: 교환 취소 권한 확인
-      // 3. 교환 취소를 요청한 사용자가 구매자인지 판매자인지 확인
-      // 3-1. 교환 취소 요청자가 판매자일 경우
-      // 3-2. 교환 취소 요청자가 구매자일 경우
 
       // 4. 교환 요청 상태 변경
       const updatedExchange = await tx.exchange.update({
