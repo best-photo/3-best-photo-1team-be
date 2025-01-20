@@ -203,16 +203,16 @@ async function main() {
   });
 
   const user2CardsData = Array.from({ length: 60 }, (_, i) =>
-    generateCardData(user1.id, i),
+    generateCardData(user2.id, i),
   );
 
   await prisma.card.createMany({
-    data: user1CardsData,
+    data: user2CardsData,
   });
 
   const user2Cards = await prisma.card.findMany({
     where: {
-      ownerId: user1.id,
+      ownerId: user2.id,
       name: { in: user2CardsData.map((card) => card.name) },
     },
   });
