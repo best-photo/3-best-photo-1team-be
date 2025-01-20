@@ -1,7 +1,7 @@
 # 풀스택 3기 파트3 1팀
 
 - [팀 문서](https://www.notion.so/chobodev/16924202780c809a9cdee8926986f244?v=16924202780c811580b1000c2847f948)
-- [Swagger](링크 필요)
+- [Swagger](https://api.ooyoo.dev/api)
 
 ## 팀원 구성
 
