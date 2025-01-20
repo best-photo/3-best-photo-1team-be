@@ -76,6 +76,7 @@ export class ShopService {
               include: {
                 offeredCard: true,
                 requester: true,
+                description: true,
               },
             },
           },
