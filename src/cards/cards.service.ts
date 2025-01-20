@@ -1,7 +1,12 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateCardDto } from './dto/create-card.dto';
 import { UpdateCardDto } from './dto/update-card.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { ProposeExchangeDto } from './dto/propose-exchange-card.dto';
 
 @Injectable()
 export class CardsService {
@@ -50,5 +55,109 @@ export class CardsService {
       ...card,
       nickname: card.owner?.nickname || 'Unknown', // 닉네임이 없을 경우 기본값 설정
     };
+  }
+
+  // 포토카드 교환 제안
+  async proposePhotoCardExchange(
+    shopId: string,
+    proposeExchangeDto: ProposeExchangeDto,
+    userId: string,
+  ) {
+    // 교환 제안 로직
+    // 수량은 1개로 고정
+    // 자신의 카드를 정보 + 수량은 1개로 고정
+    // 교환제시 내용 추가
+
+    return this.prisma.$transaction(async (tx) => {
+      // 1. 상점 존재 여부 확인
+      const shop = await this.prisma.shop.findUnique({
+        where: { id: shopId },
+        include: {
+          card: true,
+          seller: true,
+        },
+      });
+
+      if (!shop) {
+        throw new NotFoundException('상점을 찾을 수 없습니다.');
+      }
+
+      // 자신의 상점인지 확인
+      if (shop.sellerId === userId) {
+        throw new BadRequestException('자신의 카드와는 교환할 수 없습니다.');
+      }
+
+      // 2. 제안하는 카드가 실제로 사용자의 소유인지 확인
+      const offeredCard = await tx.card.findFirst({
+        where: {
+          id: proposeExchangeDto.offeredCardId,
+          ownerId: userId,
+        },
+      });
+
+      if (!offeredCard) {
+        throw new BadRequestException(
+          '제안하려는 카드를 소유하고 있지 않습니다.',
+        );
+      }
+
+      // 카드가 이미 교환 중인지 확인
+      const existingExchange = await tx.exchange.findFirst({
+        where: {
+          OR: [
+            { offeredCardId: proposeExchangeDto.offeredCardId },
+            { targetCardId: proposeExchangeDto.offeredCardId },
+          ],
+          status: { in: ['REQUESTED', 'ACCEPTED'] },
+        },
+      });
+
+      if (existingExchange) {
+        throw new BadRequestException('이미 교환 중인 카드입니다.');
+      }
+
+      // 3. 교환 요청 생성
+      const exchange = await tx.exchange.create({
+        data: {
+          requesterId: userId,
+          offeredCardId: proposeExchangeDto.offeredCardId,
+          targetCardId: shop.cardId,
+          status: 'REQUESTED',
+          description:
+            proposeExchangeDto.exchangeDescription ||
+            `${shop.card.name} 카드와 교환하고 싶습니다!`,
+        },
+        include: {
+          offeredCard: true,
+          requester: true,
+          targetCard: true,
+        },
+      });
+
+      // 4. 알림 생성
+      await tx.notification.create({
+        data: {
+          userId: shop.sellerId,
+          content: `새로운 교환 제안이 있습니다. ${offeredCard.name} 카드와의 교환을 제안받았습니다.`,
+        },
+      });
+
+      // 5. 응답 데이터 구성
+      return {
+        exchangeId: exchange.id,
+        offeredCard: {
+          imageUrl: exchange.offeredCard.imageUrl,
+          name: exchange.offeredCard.name,
+          grade: exchange.offeredCard.grade,
+          price: exchange.offeredCard.price,
+        },
+        requester: {
+          nickname: exchange.requester.nickname,
+        },
+        exchangeDescription: proposeExchangeDto.exchangeDescription,
+        status: exchange.status,
+        createdAt: exchange.createdAt,
+      };
+    });
   }
 }
