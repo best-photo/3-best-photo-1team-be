@@ -353,6 +353,7 @@ export class ShopService {
 
     return cards.map((card) => ({
       ...card,
+      shopId: card.Shop?.id || null,
       quantity: card.Shop?.remainingQuantity || null,
       price: card.Shop?.price || null,
       initialQuantity: card.Shop?.initialQuantity || null,
