@@ -8,6 +8,8 @@ model Exchange {
   targetCardId  String
   /// 교환 상태 (REQUESTED, ACCEPTED, REJECTED, COMPLETED)
   status        ExchangeStatus
+  /// 교환 제시 설명 (선택사항)
+  description   String?        @db.Text
   createdAt     DateTime       @default(now()) @db.Timestamptz(6)
   updatedAt     DateTime       @updatedAt @db.Timestamptz(6)
   /// 교환 제시 카드
