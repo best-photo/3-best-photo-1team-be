@@ -123,6 +123,7 @@ export class CardsService {
           offeredCardId: proposeExchangeDto.offeredCardId,
           targetCardId: shop.cardId,
           status: 'REQUESTED',
+          description: proposeExchangeDto.exchangeDescription,
         },
         include: {
           offeredCard: true,
