@@ -3,34 +3,13 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { CreateCardDto } from './dto/create-card.dto';
-import { UpdateCardDto } from './dto/update-card.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { ProposeExchangeDto } from './dto/propose-exchange-card.dto';
+import { AcceptExchangeCardDto } from './dto/accept-exchange-card.dto';
 
 @Injectable()
 export class CardsService {
   constructor(private prisma: PrismaService) {}
-
-  create(createCardDto: CreateCardDto) {
-    return 'This action adds a new card';
-  }
-
-  findAll() {
-    return `This action returns all cards`;
-  }
-
-  findOne(id: number) {
-    return `This action returns a #${id} card`;
-  }
-
-  update(id: number, updateCardDto: UpdateCardDto) {
-    return `This action updates a #${id} card`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} card`;
-  }
 
   async getCardByIdWithoutAuth(cardId: string) {
     // 카드와 소유자의 닉네임을 포함한 정보를 가져옴
@@ -157,6 +136,274 @@ export class CardsService {
         exchangeDescription: proposeExchangeDto.exchangeDescription,
         status: exchange.status,
         createdAt: exchange.createdAt,
+      };
+    });
+  }
+
+  // 포토카드 교환 수락
+  async acceptPhotoCardExchange(
+    shopId: string,
+    acceptExchangeCardDto: AcceptExchangeCardDto,
+    userId: string,
+  ) {
+    // 교환 수락 로직
+    // 교환 요청이 존재하는지 확인
+    // 교환 요청이 존재하면 교환 요청 상태를 확인
+    // 교환 요청 상태가 REQUESTED인 경우 ACCEPTED로 변경
+
+    return this.prisma.$transaction(async (tx) => {
+      // 1. 상점 존재 여부 확인
+      const shop = await this.prisma.shop.findUnique({
+        where: { id: shopId },
+        include: {
+          card: true,
+          seller: true,
+        },
+      });
+
+      if (!shop) {
+        throw new NotFoundException('상점을 찾을 수 없습니다.');
+      }
+
+      // 상점 소유자 확인
+      if (shop.sellerId !== userId) {
+        throw new BadRequestException('교환 수락 권한이 없습니다.');
+      }
+
+      // 2. 교환 요청 존재 여부 확인
+      const exchange = await tx.exchange.findFirst({
+        where: {
+          id: acceptExchangeCardDto.exchangeId,
+          targetCardId: shop.cardId,
+          status: 'REQUESTED', // 교환 요청 상태가 REQUESTED인 경우에만 수락 가능
+        },
+        include: {
+          offeredCard: true,
+          requester: true,
+        },
+      });
+
+      if (!exchange) {
+        throw new NotFoundException('교환 요청을 찾을 수 없습니다.');
+      }
+
+      // 3. 교환 요청 상태 변경
+      const updatedExchange = await tx.exchange.update({
+        where: { id: exchange.id },
+        data: {
+          status: 'ACCEPTED',
+        },
+        include: {
+          offeredCard: true,
+          requester: true,
+        },
+      });
+
+      // 4. 교환 요청자에 알림 생성
+      await tx.notification.create({
+        data: {
+          userId: exchange.requesterId, // 교환 요청자에게 알림
+          content: `${shop.card.name} 카드와의 교환 제안이 수락되었습니다.`,
+        },
+      });
+
+      // 5. 교환 요청자의 카드 소유권 변경
+      await tx.card.update({
+        where: { id: exchange.offeredCardId },
+        data: {
+          ownerId: shop.sellerId, // 상점 소유자에게 카드 소유권 이전
+        },
+      });
+
+      // 6. 응답 데이터 구성
+      return {
+        exchangeId: updatedExchange.id,
+        offeredCard: {
+          imageUrl: updatedExchange.offeredCard.imageUrl,
+          name: updatedExchange.offeredCard.name,
+          grade: updatedExchange.offeredCard.grade,
+          price: updatedExchange.offeredCard.price,
+        },
+        requester: {
+          nickname: updatedExchange.requester.nickname,
+        },
+      };
+    });
+  }
+
+  // 포토카드 교환 거절
+  async rejectPhotoCardExchange(
+    shopId: string,
+    acceptExchangeCardDto: AcceptExchangeCardDto,
+    userId: string,
+  ) {
+    // 교환 거절 로직
+    // 교환 요청이 존재하는지 확인
+    // 교환 요청이 존재하면 교환 요청 상태를 확인
+    // 교환 요청 상태가 REQUESTED인 경우 REJECTED로 변경
+
+    return this.prisma.$transaction(async (tx) => {
+      // 1. 상점 존재 여부 확인
+      const shop = await this.prisma.shop.findUnique({
+        where: { id: shopId },
+        include: {
+          card: true,
+          seller: true,
+        },
+      });
+
+      if (!shop) {
+        throw new NotFoundException('상점을 찾을 수 없습니다.');
+      }
+
+      // 상점 소유자 확인
+      if (shop.sellerId !== userId) {
+        throw new BadRequestException('교환 거절 권한이 없습니다.');
+      }
+
+      // 2. 교환 요청 존재 여부 확인
+      const exchange = await tx.exchange.findFirst({
+        where: {
+          id: acceptExchangeCardDto.exchangeId,
+          targetCardId: shop.cardId,
+          status: 'REQUESTED', // 교환 요청 상태가 REQUESTED인 경우에만 거절 가능
+        },
+        include: {
+          offeredCard: true,
+          requester: true,
+        },
+      });
+
+      if (!exchange) {
+        throw new NotFoundException('교환 요청을 찾을 수 없습니다.');
+      }
+
+      // 3. 교환 요청 상태 변경
+      const updatedExchange = await tx.exchange.update({
+        where: { id: exchange.id },
+        data: {
+          status: 'REJECTED',
+        },
+        include: {
+          offeredCard: true,
+          requester: true,
+        },
+      });
+
+      // 4. 교환 요청자에 알림 생성
+      await tx.notification.create({
+        data: {
+          userId: exchange.requesterId,
+          content: `${shop.card.name} 카드와의 교환 제안이 거절되었습니다.`,
+        },
+      });
+
+      // 5. 응답 데이터 구성
+      return {
+        exchangeId: updatedExchange.id,
+        offeredCard: {
+          imageUrl: updatedExchange.offeredCard.imageUrl,
+          name: updatedExchange.offeredCard.name,
+          grade: updatedExchange.offeredCard.grade,
+          price: updatedExchange.offeredCard.price,
+        },
+        requester: {
+          nickname: updatedExchange.requester.nickname,
+        },
+      };
+    });
+  }
+
+  // 포토카드 교환 취소
+  async cancelPhotoCardExchange(
+    shopId: string,
+    acceptExchangeCardDto: AcceptExchangeCardDto,
+    userId: string,
+  ) {
+    // 교환 취소 로직
+    // 교환 요청이 존재하는지 확인
+    // 교환 요청이 존재하면 교환 요청 상태를 확인
+    // 교환 요청 상태가 REQUESTED인 경우 CANCELLED로 변경
+
+    return this.prisma.$transaction(async (tx) => {
+      // 1. 상점 존재 여부 확인
+      const shop = await this.prisma.shop.findUnique({
+        where: { id: shopId },
+        include: {
+          card: true,
+          seller: true,
+        },
+      });
+
+      if (!shop) {
+        throw new NotFoundException('상점을 찾을 수 없습니다.');
+      }
+
+      // 상점 소유자 확인
+      if (shop.sellerId !== userId) {
+        throw new BadRequestException('교환 취소 권한이 없습니다.');
+      }
+
+      // 2. 교환 요청 존재 여부 확인
+      const exchange = await tx.exchange.findFirst({
+        where: {
+          id: acceptExchangeCardDto.exchangeId,
+          targetCardId: shop.cardId,
+          status: 'REQUESTED', // 교환 요청 상태가 REQUESTED인 경우에만 취소 가능
+        },
+        include: {
+          offeredCard: true,
+          requester: true,
+        },
+      });
+
+      if (!exchange) {
+        throw new NotFoundException('교환 요청을 찾을 수 없습니다.');
+      }
+
+      // 4. 교환 요청 상태 변경
+      const updatedExchange = await tx.exchange.update({
+        where: { id: exchange.id },
+        data: {
+          status: 'CANCELLED',
+        },
+        include: {
+          offeredCard: {
+            select: {
+              imageUrl: true,
+              name: true,
+              grade: true,
+              price: true,
+            },
+          },
+          requester: {
+            select: {
+              nickname: true,
+            },
+          },
+        },
+      });
+
+      // 5. 교환 요청자에 알림 생성
+      await tx.notification.create({
+        data: {
+          userId: exchange.requesterId,
+          content: `${shop.card.name} 카드와의 교환 제안이 취소 되었습니다.`,
+        },
+      });
+
+      // 6. 응답 데이터 구성
+      return {
+        exchangeId: updatedExchange.id,
+        offeredCard: {
+          imageUrl: updatedExchange.offeredCard.imageUrl,
+          name: updatedExchange.offeredCard.name,
+          grade: updatedExchange.offeredCard.grade,
+          price: updatedExchange.offeredCard.price,
+        },
+        requester: {
+          nickname: updatedExchange.requester.nickname,
+        },
       };
     });
   }

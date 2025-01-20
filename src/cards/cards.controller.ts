@@ -1,20 +1,12 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Patch,
-  Param,
-  Delete,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, UseGuards } from '@nestjs/common';
 import { CardsService } from './cards.service';
-import { CreateCardDto } from './dto/create-card.dto';
-import { UpdateCardDto } from './dto/update-card.dto';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { ProposeExchangeDto } from './dto/propose-exchange-card.dto';
 import { GetUser } from 'src/auth/decorators/get-user.decorator';
 import { AuthGuard } from 'src/auth/auth.guard';
+import { RejectExchangeCardDto } from './dto/reject-exchange-card.dto';
+import { AcceptExchangeCardDto } from './dto/accept-exchange-card.dto';
+import { CancelExchangeCardDto } from './dto/cancel-exchange-card.dto';
 
 @Controller('cards')
 export class CardsController {
@@ -57,28 +49,107 @@ export class CardsController {
     );
   }
 
-  @Post()
-  create(@Body() createCardDto: CreateCardDto) {
-    return this.cardsService.create(createCardDto);
+  @ApiOperation({ summary: '포토카드 교환 수락' })
+  @ApiResponse({
+    status: 200,
+    description: '교환 성공',
+  })
+  @ApiResponse({
+    status: 404,
+    description: '교환 제안을 찾을 수 없음',
+  })
+  @ApiResponse({
+    status: 403,
+    description: '교환 제안을 수락할 수 없음',
+  })
+  @ApiResponse({
+    status: 409,
+    description: '교환 제안이 이미 수락되었음',
+  })
+  @ApiResponse({
+    status: 400,
+    description: '자신의 카드를 교환 제안할 수 없음',
+  })
+  @UseGuards(AuthGuard)
+  @Post(':shopId/exchange/accept')
+  async acceptPhotoCardExchange(
+    @Param('shopId') shopId: string,
+    @Body() acceptExchangeCardDto: AcceptExchangeCardDto,
+    @GetUser() user,
+  ) {
+    const { userId } = user;
+    return this.cardsService.acceptPhotoCardExchange(
+      shopId,
+      acceptExchangeCardDto,
+      userId,
+    );
   }
 
-  @Get()
-  findAll() {
-    return this.cardsService.findAll();
+  @ApiOperation({ summary: '포토카드 교환 거절' })
+  @ApiResponse({
+    status: 200,
+    description: '교환 거절 성공',
+  })
+  @ApiResponse({
+    status: 404,
+    description: '교환 제안을 찾을 수 없음',
+  })
+  @ApiResponse({
+    status: 403,
+    description: '교환 제안을 거절할 수 없음',
+  })
+  @ApiResponse({
+    status: 409,
+    description: '교환 제안이 이미 거절되었음',
+  })
+  @ApiResponse({
+    status: 400,
+    description: '자신의 카드를 교환 제안할 수 없음',
+  })
+  @UseGuards(AuthGuard)
+  @Post(':shopId/exchange/reject')
+  async rejectPhotoCardExchange(
+    @Param('shopId') shopId: string,
+    @Body() rejectExchangeCardDto: RejectExchangeCardDto,
+    @GetUser() user,
+  ) {
+    const { userId } = user;
+    return this.cardsService.rejectPhotoCardExchange(
+      shopId,
+      rejectExchangeCardDto,
+      userId,
+    );
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.cardsService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateCardDto: UpdateCardDto) {
-    return this.cardsService.update(+id, updateCardDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.cardsService.remove(+id);
+  @ApiOperation({ summary: '포토카드 교환 제안 취소' })
+  @ApiResponse({
+    status: 200,
+    description: '교환 제안 취소 성공',
+  })
+  @ApiResponse({
+    status: 404,
+    description: '교환 제안을 찾을 수 없음',
+  })
+  @ApiResponse({
+    status: 403,
+    description: '교환 제안을 취소할 수 없음',
+  })
+  @ApiResponse({
+    status: 409,
+    description: '교환 제안이 이미 수락되었음',
+  })
+  @UseGuards(AuthGuard)
+  @Post(':shopId/exchange/cancel')
+  async cancelPhotoCardExchange(
+    @Param('shopId') shopId: string,
+    @Body() cancelExchangeCardDto: CancelExchangeCardDto,
+    @GetUser() user,
+  ) {
+    const { userId } = user;
+    return this.cardsService.cancelPhotoCardExchange(
+      shopId,
+      cancelExchangeCardDto,
+      userId,
+    );
   }
 }
