@@ -38,6 +38,7 @@ export class ShopService {
           cardId: createShopDto.cardId,
           price: createShopDto.price,
           initialQuantity: createShopDto.quantity,
+          remainingQuantity: createShopDto.quantity,
           exchangeGrade: gradeMap[createShopDto.exchangeGrade],
           exchangeGenre: genreMap[createShopDto.exchangeGenre],
           exchangeDescription: createShopDto.exchangeDescription || null,
@@ -61,47 +62,47 @@ export class ShopService {
   }
 
   // 판매 카드 상세 조회
-  async getShopDetails(shopId: string): Promise<ShopDetailsResponse> {
-    const shop = await this.prisma.shop.findUnique({
-      where: { id: shopId },
-      include: {
-        card: {
-          include: {
-            owner: true, // 카드 소유자 정보
-          },
-        },
-        seller: true, // 판매자 정보
-      },
-    });
+  // async getShopDetails(shopId: string): Promise<ShopDetailsResponse> {
+  //   const shop = await this.prisma.shop.findUnique({
+  //     where: { id: shopId },
+  //     include: {
+  //       card: {
+  //         include: {
+  //           owner: true, // 카드 소유자 정보
+  //         },
+  //       },
+  //       seller: true, // 판매자 정보
+  //     },
+  //   });
 
-    if (!shop) {
-      throw new NotFoundException('판매 정보를 찾을 수 없습니다.');
-    }
+  //   if (!shop) {
+  //     throw new NotFoundException('판매 정보를 찾을 수 없습니다.');
+  //   }
 
-    return {
-      // 상점에 올렸는데 회원탈퇴한 경우 판매자 정보가 null이 될 수 있음
-      card: shop.card
-        ? {
-            name: shop.card.name,
-            imageUrl: shop.card.imageUrl,
-            grade: shop.card.grade,
-            genre: shop.card.genre,
-            owner: shop.card.owner?.nickname ?? '소유자 정보 없음',
-            description: shop.card.description,
-          }
-        : null,
-      shop: {
-        price: shop.price,
-        initialQuantity: shop.initialQuantity,
-        remainingQuantity: shop.remainingQuantity,
-        exchangeInfo: {
-          grade: shop.exchangeGrade,
-          genre: shop.exchangeGenre,
-          description: shop.exchangeDescription,
-        },
-      },
-    };
-  }
+  //   return {
+  //     // 상점에 올렸는데 회원탈퇴한 경우 판매자 정보가 null이 될 수 있음
+  //     card: shop.card
+  //       ? {
+  //           name: shop.card.name,
+  //           imageUrl: shop.card.imageUrl,
+  //           grade: shop.card.grade,
+  //           genre: shop.card.genre,
+  //           owner: shop.card.owner?.nickname ?? '소유자 정보 없음',
+  //           description: shop.card.description,
+  //         }
+  //       : null,
+  //     shop: {
+  //       price: shop.price,
+  //       initialQuantity: shop.initialQuantity,
+  //       remainingQuantity: shop.remainingQuantity,
+  //       exchangeInfo: {
+  //         grade: shop.exchangeGrade,
+  //         genre: shop.exchangeGenre,
+  //         description: shop.exchangeDescription,
+  //       },
+  //     },
+  //   };
+  // }
 
   // 판매 정보 수정
   async update(id: string, updateShopDto: UpdateShopDto) {
@@ -237,7 +238,7 @@ export class ShopService {
       sellerId: shop.sellerId,
       cardId: shop.cardId,
       price: shop.price,
-      quantity: shop.initialQuantity,
+      quantity: shop.remainingQuantity,
       exchangeGrade: shop.exchangeGrade,
       exchangeGenre: shop.exchangeGenre,
       createdAt: shop.createdAt,
@@ -273,25 +274,25 @@ export class ShopService {
     const { query, grade, genre, status, placeOrder } = filters;
     const statusFilter =
       status === 'IN_STOCK'
-        ? { shop: { quantity: { gt: 0 } } }
+        ? { Shop: { remainingQuantity: { gt: 0 } } }
         : status === 'OUT_OF_STOCK'
-          ? { shop: { quantity: 0 } }
-          : {};
+          ? { Shop: { remainingQuantity: 0 } }
+          : undefined; // 필터 없음
 
     const orderBy =
       placeOrder === '높은 가격순'
-        ? { price: 'desc' as const }
+        ? { Shop: { price: 'desc' as const } }
         : placeOrder === '낮은 가격순'
-          ? { price: 'asc' as const }
+          ? { Shop: { price: 'asc' as const } }
           : placeOrder === '최신순'
-            ? { createdAt: 'desc' as const }
+            ? { Shop: { createdAt: 'desc' as const } }
             : placeOrder === '오래된 순'
-              ? { createdAt: 'asc' as const }
+              ? { Shop: { createdAt: 'asc' as const } }
               : undefined;
 
     const cards = await this.prisma.card.findMany({
       where: {
-        shop: {
+        Shop: {
           isNot: null,
         },
         name: query ? { contains: query, mode: 'insensitive' } : undefined,
@@ -313,8 +314,11 @@ export class ShopService {
 
     return cards.map((card) => ({
       ...card,
-      quantity: card.Shop?.quantity || null,
-      createdAt: card.shop?.createdAt || card.createdAt,
+      quantity: card.Shop?.remainingQuantity || null,
+      price: card.Shop?.price || null,
+      initialQuantity: card.Shop?.initialQuantity || null,
+      remainingQuantity: card.Shop?.remainingQuantity || null,
+      createdAt: card.Shop?.createdAt || card.createdAt,
     }));
   }
 
@@ -351,11 +355,21 @@ export class ShopService {
           is: null,
         },
       },
+      include: {
+        owner: {
+          select: {
+            nickname: true,
+          },
+        },
+      },
     });
 
-    return cards.map((card) => ({
+    const result = cards.map((card) => ({
       ...card,
+      nickname: card.owner?.nickname || 'Unknown',
     }));
+    console.log(result);
+    return result;
   }
 
   async findCardByUserAndId(userId: string, cardId: string) {
@@ -577,5 +591,144 @@ export class ShopService {
         },
       } satisfies PurchaseResponseDto;
     });
+  }
+
+  async getFilterCountsByCategory(category: string): Promise<number[]> {
+    const validCategories = ['grades', 'genres', 'stockState'];
+
+    if (!validCategories.includes(category)) {
+      throw new Error(`Invalid category: ${category}`);
+    }
+
+    if (category === 'grades') {
+      const allGrades = Object.values(CardGrade);
+
+      const grades = await this.prisma.card.groupBy({
+        by: ['grade'],
+        _count: { id: true },
+        where: {
+          Shop: {
+            isNot: null,
+          },
+        },
+      });
+
+      const gradeCounts = allGrades.map((grade) => {
+        const matchingGrade = grades.find((g) => g.grade === grade);
+        return matchingGrade ? matchingGrade._count.id : 0;
+      });
+      return gradeCounts;
+    }
+
+    if (category === 'genres') {
+      const allGenres = Object.values(CardGenre);
+
+      const genres = await this.prisma.card.groupBy({
+        by: ['genre'],
+        _count: { id: true },
+        where: {
+          Shop: {
+            isNot: null,
+          },
+        },
+      });
+
+      const genreCounts = allGenres.map((genre) => {
+        const matchingGenre = genres.find((g) => g.genre === genre);
+        return matchingGenre ? matchingGenre._count.id : 0;
+      });
+      console.log('genres : ', genreCounts);
+      return genreCounts;
+    }
+
+    if (category === 'stockState') {
+      const stockState = [
+        await this.prisma.shop.count({
+          where: { remainingQuantity: { gt: 0 } },
+        }),
+        await this.prisma.shop.count({
+          where: { remainingQuantity: 0 },
+        }),
+      ];
+      return stockState;
+    }
+    return [];
+  }
+
+  async getFilterCountsByCategoryAndUser(
+    category: string,
+    userId: string,
+  ): Promise<number[]> {
+    const validCategories = ['grades', 'genres', 'stockState'];
+
+    if (!validCategories.includes(category)) {
+      throw new Error(`Invalid category: ${category}`);
+    }
+
+    if (category === 'grades') {
+      const allGrades = Object.values(CardGrade);
+
+      const grades = await this.prisma.card.groupBy({
+        by: ['grade'],
+        _count: { id: true },
+        where: {
+          ownerId: userId,
+          Shop: {
+            is: null,
+          },
+        },
+      });
+
+      const gradeCounts = allGrades.map((grade) => {
+        const matchingGrade = grades.find((g) => g.grade === grade);
+        return matchingGrade ? matchingGrade._count.id : 0;
+      });
+      return gradeCounts;
+    }
+
+    if (category === 'genres') {
+      const allGenres = Object.values(CardGenre);
+
+      const genres = await this.prisma.card.groupBy({
+        by: ['genre'],
+        _count: { id: true },
+        where: {
+          ownerId: userId,
+          Shop: {
+            is: null,
+          },
+        },
+      });
+
+      const genreCounts = allGenres.map((genre) => {
+        const matchingGenre = genres.find((g) => g.genre === genre);
+        return matchingGenre ? matchingGenre._count.id : 0;
+      });
+      return genreCounts;
+    }
+
+    if (category === 'stockState') {
+      const stockState = [
+        await this.prisma.card.count({
+          where: {
+            ownerId: userId,
+            Shop: {
+              is: null,
+            },
+            remainingQuantity: { gt: 0 },
+          },
+        }),
+        await this.prisma.card.count({
+          where: {
+            ownerId: userId,
+            Shop: {
+              is: null,
+            },
+            remainingQuantity: 0,
+          },
+        }),
+      ];
+      return stockState;
+    }
   }
 }
