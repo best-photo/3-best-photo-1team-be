@@ -387,7 +387,6 @@ export class UsersController {
   }
 
   @Get('my-cards/:userId/:cardId')
-  @UseGuards(AuthGuard) // 인증된 사용자만 접근할 수 있도록
   @ApiOperation({
     summary: 'Get card details by card ID',
     description: "Fetch a card by its ID along with the owner's nickname",
