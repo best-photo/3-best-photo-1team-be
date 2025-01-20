@@ -62,23 +62,20 @@ export class ShopService {
   }
 
   // 판매 카드 상세 조회
-  async getShopDetails(shopId: string): Promise<ShopDetailsResponse> {
+  async getShopDetails(
+    shopId: string,
+    requesterId: string,
+  ): Promise<ShopDetailsResponse> {
     const shop = await this.prisma.shop.findUnique({
       where: { id: shopId },
       include: {
         card: {
           include: {
             owner: true,
-            // 내가 제시한 교환 목록
-            offeredExchanges: {
-              include: {
-                offeredCard: true, // 내가 제시한 카드 정보
-              },
-            },
-            // 다른 사람이 제시한 교환 목록
             targetExchanges: {
               include: {
-                offeredCard: true, // 상대방이 제시한 카드 정보
+                offeredCard: true,
+                requester: true,
               },
             },
           },
@@ -90,6 +87,35 @@ export class ShopService {
     if (!shop) {
       throw new NotFoundException('판매 정보를 찾을 수 없습니다.');
     }
+
+    const offeredExchanges =
+      shop.card?.targetExchanges
+        ?.filter((exchange) => exchange.requester.id === requesterId) // 요청자가 올린 교환 요청만 필터링
+        .map((exchange) => ({
+          card: {
+            name: exchange.offeredCard.name,
+            imageUrl: exchange.offeredCard.imageUrl,
+            grade: exchange.offeredCard.grade,
+            genre: exchange.offeredCard.genre,
+            description: exchange.offeredCard.description,
+          },
+          description: exchange.description,
+          status: exchange.status,
+        })) ?? [];
+
+    const targetExchanges =
+      shop.card?.targetExchanges.map((exchange) => ({
+        card: {
+          name: exchange.offeredCard.name,
+          imageUrl: exchange.offeredCard.imageUrl,
+          grade: exchange.offeredCard.grade,
+          genre: exchange.offeredCard.genre,
+          description: exchange.offeredCard.description,
+        },
+        requester: exchange.requester.nickname,
+        description: exchange.description,
+        status: exchange.status,
+      })) ?? [];
 
     return {
       // 상점에 올렸는데 회원탈퇴한 경우 판매자 정보가 null이 될 수 있음
@@ -114,32 +140,8 @@ export class ShopService {
         },
       },
       exchanges: {
-        // 내가 제시한 교환 목록
-        offeredExchanges:
-          shop.card?.offeredExchanges.map((exchange) => ({
-            card: {
-              name: exchange.offeredCard.name,
-              imageUrl: exchange.offeredCard.imageUrl,
-              grade: exchange.offeredCard.grade,
-              genre: exchange.offeredCard.genre,
-              description: exchange.offeredCard.description,
-            },
-            description: exchange.description,
-            status: exchange.status,
-          })) ?? [],
-        // 다른 사람이 제시한 교환 목록
-        targetExchanges:
-          shop.card?.targetExchanges.map((exchange) => ({
-            card: {
-              name: exchange.offeredCard.name,
-              imageUrl: exchange.offeredCard.imageUrl,
-              grade: exchange.offeredCard.grade,
-              genre: exchange.offeredCard.genre,
-              description: exchange.offeredCard.description,
-            },
-            description: exchange.description,
-            status: exchange.status,
-          })) ?? [],
+        offeredExchanges,
+        targetExchanges,
       },
     };
   }
