@@ -6,11 +6,15 @@ import {
   Patch,
   Param,
   Delete,
+  UseGuards,
 } from '@nestjs/common';
 import { CardsService } from './cards.service';
 import { CreateCardDto } from './dto/create-card.dto';
 import { UpdateCardDto } from './dto/update-card.dto';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ProposeExchangeDto } from './dto/propose-exchange-card.dto';
+import { GetUser } from 'src/auth/decorators/get-user.decorator';
+import { AuthGuard } from 'src/auth/auth.guard';
 
 @Controller('cards')
 export class CardsController {
@@ -31,6 +35,26 @@ export class CardsController {
   })
   async getCardByIdWithoutAuth(@Param('id') id: string) {
     return this.cardsService.getCardByIdWithoutAuth(id);
+  }
+
+  @ApiOperation({ summary: '포토카드 교환 제안' })
+  @ApiResponse({
+    status: 201,
+    description: '교환 제안 성공',
+  })
+  @UseGuards(AuthGuard)
+  @Post(':shopId/exchange')
+  async proposePhotoCardExchange(
+    @Param('shopId') shopId: string,
+    @Body() proposeExchangeDto: ProposeExchangeDto,
+    @GetUser() user,
+  ) {
+    const { userId } = user;
+    return this.cardsService.proposePhotoCardExchange(
+      shopId,
+      proposeExchangeDto,
+      userId,
+    );
   }
 
   @Post()
