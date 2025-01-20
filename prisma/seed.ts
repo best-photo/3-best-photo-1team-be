@@ -146,7 +146,7 @@ async function generateNotifications(userId: string, count: number) {
 }
 
 async function main() {
-  prisma.$transaction(async (prisma) => {
+  await prisma.$transaction(async (prisma) => {
     await prisma.pointHistory.deleteMany();
     await prisma.notification.deleteMany();
     await prisma.point.deleteMany();
@@ -245,6 +245,7 @@ async function main() {
           offeredCardId: card.id,
           targetCardId: user2Cards[0].id,
           status: 'REQUESTED',
+          description: '교환 요청드립니다.',
         },
       }),
     ),
@@ -258,6 +259,7 @@ async function main() {
           offeredCardId: card.id,
           targetCardId: user1Cards[0].id,
           status: 'REQUESTED',
+          description: '교환 요청드립니다.',
         },
       }),
     ),
