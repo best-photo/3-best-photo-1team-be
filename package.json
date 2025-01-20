@@ -9,6 +9,9 @@
     "node": ">=20",
     "npm": ">=10"
   },
+  "prisma": {
+    "seed": "ts-node prisma/seed.ts"
+  },
   "scripts": {
     "prisma:generate": "npx prisma generate",
     "build": "nest build",

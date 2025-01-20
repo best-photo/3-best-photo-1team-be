@@ -8,7 +8,6 @@ import { UpdateShopDto } from './dto/update-shop.dto';
 import { Card } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CardGrade, CardGenre } from '@prisma/client';
-import { ShopDetailsResponse } from './dto/shop.dto';
 import { PurchaseCardDto } from './dto/purchase-card.dto';
 import { PurchaseResponseDto } from './dto/purchase-response.dto';
 

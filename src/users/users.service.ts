@@ -353,11 +353,28 @@ export class UsersService {
     let exchangeTotal = 0;
 
     if (!salesMethod || salesMethod === 'SALE') {
+      const shopWhere = {
+        sellerId: userId,
+        ...(stockState && {
+          remainingQuantity:
+            stockState === 'IN_STOCK' ? { gt: 0 } : { equals: 0 },
+        }),
+        card: {
+          ...(grade && { grade }),
+          ...(genre && { genre }),
+          ...(keyword && {
+            OR: [
+              { name: { contains: keyword } },
+              { description: { contains: keyword } },
+            ],
+          }),
+        },
+      };
+
       [sellingCards, shopTotal] = await Promise.all([
         this.prisma.shop.findMany({
           where: {
-            sellerId: userId,
-            card: cardWhere,
+            ...shopWhere,
           },
           select: {
             id: true,
@@ -374,6 +391,7 @@ export class UsersService {
                 description: true,
                 grade: true,
                 genre: true,
+                imageUrl: true,
                 owner: {
                   select: {
                     nickname: true,
@@ -413,6 +431,7 @@ export class UsersService {
                 price: true,
                 grade: true,
                 genre: true,
+                imageUrl: true,
                 owner: {
                   select: {
                     nickname: true,

@@ -139,6 +139,13 @@ export class GetMySellingCardResponseDto extends CardDto {
   @IsString()
   state: 'sale';
 
+  @ApiProperty({
+    nullable: false,
+    description: '카드 이미지',
+  })
+  @IsString()
+  imageUrl: string;
+
   static of(shop: SellingCardWithRelations): GetMySellingCardResponseDto {
     const response = new GetMySellingCardResponseDto();
     response.targetId = shop.id;
@@ -147,6 +154,7 @@ export class GetMySellingCardResponseDto extends CardDto {
     response.nickname = shop.card.owner.nickname;
     response.name = shop.card.name;
     response.description = shop.card.description;
+    response.imageUrl = shop.card.imageUrl;
     response.grade = shop.card.grade;
     response.genre = shop.card.genre;
     response.price = shop.price;
