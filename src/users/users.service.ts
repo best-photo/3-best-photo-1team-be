@@ -196,7 +196,7 @@ export class UsersService {
     userId: string,
     search: string = '',
     sortGrade: CardGrade | '' = '',
-    sortGenre: CardGenre | '' = ''
+    sortGenre: CardGenre | '' = '',
   ) {
     const where: Prisma.CardWhereInput = {
       ownerId: userId,
@@ -204,9 +204,9 @@ export class UsersService {
       ...(sortGrade && { grade: sortGrade }),
       ...(sortGenre && { genre: sortGenre }),
     };
-  
+
     console.log('WHERE CONDITIONS:', where); // 조건 확인
-  
+
     const cards = await this.prisma.card.findMany({
       where,
       include: {
@@ -217,13 +217,13 @@ export class UsersService {
         },
       },
     });
-  
+
     // 카드를 반환하면서, `nickname`을 각 카드에 포함시켜줍니다
     const cardsWithNickname = cards.map((card) => ({
       ...card,
       nickname: card.owner?.nickname, // 'nickname'을 카드 데이터에 추가
     }));
-  
+
     return {
       cards: cardsWithNickname,
     };

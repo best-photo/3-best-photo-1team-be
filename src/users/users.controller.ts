@@ -273,37 +273,37 @@ export class UsersController {
   }
 
   @Get('my-cards')
-@UseGuards(AuthGuard)
-@ApiQuery({
-  name: 'search',
-  required: false,
-  description: 'Search keyword (optional)',
-})
-@ApiQuery({
-  name: 'sortGrade',
-  enum: CardGrade,
-  required: false,
-  description: 'Filter by card grade (optional)',
-})
-@ApiQuery({
-  name: 'sortGenre',
-  enum: CardGenre,
-  required: false,
-  description: 'Filter by card genre (optional)',
-})
-async getMyCards(
-  @GetUser() user: { userId: string },
-  @Query('search') search?: string, // Optional
-  @Query('sortGrade') sortGrade?: CardGrade, // Prisma enum
-  @Query('sortGenre') sortGenre?: CardGenre, // Prisma enum
-) {
-  return this.usersService.getUserCards(
-    user.userId,
-    search || '',
-    sortGrade || '',
-    sortGenre || ''
-  );
-}
+  @UseGuards(AuthGuard)
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    description: 'Search keyword (optional)',
+  })
+  @ApiQuery({
+    name: 'sortGrade',
+    enum: CardGrade,
+    required: false,
+    description: 'Filter by card grade (optional)',
+  })
+  @ApiQuery({
+    name: 'sortGenre',
+    enum: CardGenre,
+    required: false,
+    description: 'Filter by card genre (optional)',
+  })
+  async getMyCards(
+    @GetUser() user: { userId: string },
+    @Query('search') search?: string, // Optional
+    @Query('sortGrade') sortGrade?: CardGrade, // Prisma enum
+    @Query('sortGenre') sortGenre?: CardGenre, // Prisma enum
+  ) {
+    return this.usersService.getUserCards(
+      user.userId,
+      search || '',
+      sortGrade || '',
+      sortGenre || '',
+    );
+  }
 
   @Get('my-cards/sales/count')
   @UseGuards(AuthGuard)
