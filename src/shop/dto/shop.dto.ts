@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { createId } from '@paralleldrive/cuid2';
-import { CardGenre, CardGrade } from '@prisma/client';
+import { CardGenre, CardGrade, ExchangeStatus } from '@prisma/client';
 import { IsInt, Min } from 'class-validator';
 
 export class ShopDTO {
@@ -58,4 +58,20 @@ export class ShopDetailsResponse {
       description?: string | null;
     };
   };
+  exchanges: {
+    offeredExchanges: ExchangeCardInfo[]; // 내가 제시한 교환 목록
+    targetExchanges: ExchangeCardInfo[]; // 다른 사람이 제시한 교환 목록
+  };
+}
+
+export class ExchangeCardInfo {
+  card: {
+    name: string;
+    imageUrl: string;
+    grade: CardGrade;
+    genre: CardGenre;
+    description?: string | null;
+  };
+  description?: string | null;
+  status: ExchangeStatus;
 }
