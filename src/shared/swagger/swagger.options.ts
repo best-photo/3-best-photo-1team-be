@@ -16,12 +16,13 @@ const swaggerOption = (): Omit<OpenAPIObject, 'paths'> => {
     .setTitle('최애의 포토 API')
     .setDescription('최애의 포토 API 명세서')
     .setVersion('1.0')
-    .addTag('auth', '인증 관리')
-    .addTag('shop', '상점 관리')
-    .addTag('cards', '카드 관리')
-    .addTag('notifications', '알림 관리')
-    .addTag('users', '사용자 관리')
-    .addTag('points', '포인트 관리')
+    .addTag('Auth', '인증 관리')
+    .addTag('Shop', '상점 관리')
+    .addTag('Cards', '카드 관리')
+    .addTag('Notifications', '알림 관리')
+    .addTag('Users', '사용자 관리')
+    .addTag('Points', '포인트 관리')
+    .addTag('Image', '사진 관리')
     .build();
 
   return options;
