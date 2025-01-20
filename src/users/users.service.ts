@@ -263,22 +263,22 @@ export class UsersService {
     const user: User | null = await this.prisma.user.findUnique({
       where: { id: userId },
     });
-  
+
     if (!user) {
       throw new NotFoundException('사용자를 찾을 수 없습니다.');
     }
-  
+
     // 사용자가 가진 모든 카드 조회
     const cards = await this.prisma.card.findMany({
       where: { ownerId: userId },
     });
-  
+
     // 각 등급별 카운트 초기화
     let common = 0;
     let rare = 0;
     let superRare = 0;
     let legendary = 0;
-  
+
     // 카드의 등급별 개수 계산
     cards.forEach((card) => {
       switch (card.grade.toUpperCase()) {
@@ -300,7 +300,7 @@ export class UsersService {
           break;
       }
     });
-  
+
     // 반환할 데이터 객체 생성
     return {
       nickname: user.nickname, // 사용자 닉네임 반환
@@ -309,7 +309,7 @@ export class UsersService {
       superRare,
       legendary,
     };
-  }  
+  }
 
   async getMySellingCards(userId: string, params: GetMyCardsRequestDto) {
     const { grade, genre, stockState, salesMethod, keyword } = params;
