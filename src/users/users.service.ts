@@ -269,12 +269,8 @@ export class UsersService {
     }
 
     // 사용자가 가진 모든 카드 조회
-    const cardCounts = await this.prisma.card.groupBy({
-      by: ['grade'],
+    const cards = await this.prisma.card.findMany({
       where: { ownerId: userId },
-      _count: {
-        grade: true,
-      },
     });
 
     // 각 등급별 카운트 초기화
@@ -284,7 +280,7 @@ export class UsersService {
     let legendary = 0;
 
     // 카드의 등급별 개수 계산
-    cardCounts.forEach((card) => {
+    cards.forEach((card) => {
       switch (card.grade.toUpperCase()) {
         case 'COMMON':
           common++;
@@ -297,6 +293,10 @@ export class UsersService {
           break;
         case 'LEGENDARY':
           legendary++;
+          break;
+        default:
+          // 등급이 없는 경우 처리할 수 있습니다 (선택적)
+          console.log(`Unknown grade for card: ${card.grade}`);
           break;
       }
     });
