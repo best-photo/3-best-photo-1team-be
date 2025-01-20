@@ -146,15 +146,16 @@ async function generateNotifications(userId: string, count: number) {
 }
 
 async function main() {
-  // DB 초기화
-  await prisma.pointHistory.deleteMany();
-  await prisma.notification.deleteMany();
-  await prisma.point.deleteMany();
-  await prisma.purchase.deleteMany();
-  await prisma.exchange.deleteMany();
-  await prisma.shop.deleteMany();
-  await prisma.card.deleteMany();
-  await prisma.user.deleteMany();
+  prisma.$transaction(async (prisma) => {
+    await prisma.pointHistory.deleteMany();
+    await prisma.notification.deleteMany();
+    await prisma.point.deleteMany();
+    await prisma.purchase.deleteMany();
+    await prisma.exchange.deleteMany();
+    await prisma.shop.deleteMany();
+    await prisma.card.deleteMany();
+    await prisma.user.deleteMany();
+  });
 
   const hashedPassword = await argon2.hash('qwer1!2@');
 
@@ -186,21 +187,35 @@ async function main() {
   });
 
   // 카드 생성
-  const user1Cards = await Promise.all(
-    Array.from({ length: 60 }, (_, i) =>
-      prisma.card.create({
-        data: generateCardData(user1.id, i),
-      }),
-    ),
+  const user1CardsData = Array.from({ length: 60 }, (_, i) =>
+    generateCardData(user1.id, i),
   );
 
-  const user2Cards = await Promise.all(
-    Array.from({ length: 60 }, (_, i) =>
-      prisma.card.create({
-        data: generateCardData(user2.id, i + 60),
-      }),
-    ),
+  await prisma.card.createMany({
+    data: user1CardsData,
+  });
+
+  const user1Cards = await prisma.card.findMany({
+    where: {
+      ownerId: user1.id,
+      name: { in: user1CardsData.map((card) => card.name) },
+    },
+  });
+
+  const user2CardsData = Array.from({ length: 60 }, (_, i) =>
+    generateCardData(user1.id, i),
   );
+
+  await prisma.card.createMany({
+    data: user1CardsData,
+  });
+
+  const user2Cards = await prisma.card.findMany({
+    where: {
+      ownerId: user1.id,
+      name: { in: user2CardsData.map((card) => card.name) },
+    },
+  });
 
   // 상점 데이터
   await Promise.all(
