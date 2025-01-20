@@ -112,9 +112,11 @@ export class ShopController {
     return await this.shopService.findAll(filters);
   }
 
+  @UseGuards(AuthGuard)
   @Get(':id')
-  async getShopDetails(@Param('id') shopId: string) {
-    return this.shopService.getShopDetails(shopId);
+  async getShopDetails(@Param('id') shopId: string, @GetUser() user) {
+    const { userId } = user;
+    return this.shopService.getShopDetails(shopId, userId);
   }
   @ApiOperation({ summary: '판매 포토 카드 정보 수정' })
   @ApiParam({
