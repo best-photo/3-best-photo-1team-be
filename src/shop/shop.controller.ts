@@ -88,11 +88,10 @@ export class ShopController {
       },
     },
   })
-  @Get(':id')
-  async getShopDetails(@Param('id') shopId: string) {
-    return this.shopService.getShopDetails(shopId);
-  }
-
+  // @Get(':id')
+  // async getShopDetails(@Param('id') shopId: string) {
+  //   return this.shopService.getShopDetails(shopId);
+  // }
   @ApiOperation({ summary: '판매 포토 카드 정보 수정' })
   @ApiParam({
     name: 'id',
@@ -235,4 +234,19 @@ export class ShopController {
   //   const filters = { query, grade, genre };
   //   return await this.shopService.findUserCards(userId, filters);
   // }
+
+  @Get('filters/:category')
+  async getFilterCountsByCategory(@Param('category') category: string) {
+    console.log(category);
+    return this.shopService.getFilterCountsByCategory(category);
+  }
+
+  @Get('filters/:userId/:category')
+  async getFilterCountsByCategoryAndUser(
+    @Param('userId') userId: string,
+    @Param('category') category: string,
+  ) {
+    console.log(`User ID: ${userId}, Category: ${category}`);
+    return this.shopService.getFilterCountsByCategoryAndUser(category, userId);
+  }
 }
