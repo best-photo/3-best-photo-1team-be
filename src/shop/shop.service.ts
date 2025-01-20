@@ -37,7 +37,7 @@ export class ShopService {
           sellerId: createShopDto.sellerId,
           cardId: createShopDto.cardId,
           price: createShopDto.price,
-          quantity: createShopDto.quantity,
+          initialQuantity: createShopDto.quantity,
           exchangeGrade: gradeMap[createShopDto.exchangeGrade],
           exchangeGenre: genreMap[createShopDto.exchangeGenre],
           exchangeDescription: createShopDto.exchangeDescription || null,
@@ -237,7 +237,7 @@ export class ShopService {
       sellerId: shop.sellerId,
       cardId: shop.cardId,
       price: shop.price,
-      quantity: shop.quantity,
+      quantity: shop.initialQuantity,
       exchangeGrade: shop.exchangeGrade,
       exchangeGenre: shop.exchangeGenre,
       createdAt: shop.createdAt,
@@ -301,6 +301,7 @@ export class ShopService {
       },
       include: {
         Shop: true,
+        Shop: true,
         owner: {
           select: {
             nickname: true,
@@ -346,7 +347,7 @@ export class ShopService {
         name: query ? { contains: query, mode: 'insensitive' } : undefined,
         grade: grade ? gradeMap[grade] : undefined,
         genre: genre ? genreMap[genre] : undefined,
-        shop: {
+        Shop: {
           is: null,
         },
       },
@@ -370,7 +371,7 @@ export class ShopService {
     const card = await this.prisma.card.findUnique({
       where: { id: cardId },
       include: {
-        shop: true, // Shop 데이터를 포함
+        Shop: true, // Shop 데이터를 포함
       },
     });
 
