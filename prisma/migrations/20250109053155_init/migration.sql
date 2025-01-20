@@ -5,10 +5,7 @@ CREATE TYPE "CardGrade" AS ENUM ('common', 'rare', 'super_rare', 'legendary');
 CREATE TYPE "CardGenre" AS ENUM ('travel', 'landscape', 'portrait', 'object');
 
 -- CreateEnum
-CREATE TYPE "ExchangeStatus" AS ENUM ('requested', 'accepted', 'rejected', 'completed');
-
--- CreateEnum
-CREATE TYPE "PointType" AS ENUM ('join', 'draw', 'purchase', 'exchange', 'refund');
+CREATE TYPE "PointType" AS ENUM ('join', 'draw', 'exchange', 'refund');
 
 -- CreateTable
 CREATE TABLE "cards" (
@@ -16,7 +13,6 @@ CREATE TABLE "cards" (
     "ownerId" TEXT NOT NULL,
     "name" VARCHAR(100) NOT NULL,
     "price" INTEGER NOT NULL,
-    "imageUrl" VARCHAR(2048) NOT NULL,
     "grade" "CardGrade" NOT NULL,
     "genre" "CardGenre" NOT NULL,
     "description" TEXT,
@@ -34,8 +30,6 @@ CREATE TABLE "exchanges" (
     "requesterId" TEXT NOT NULL,
     "offeredCardId" TEXT NOT NULL,
     "targetCardId" TEXT NOT NULL,
-    "status" "ExchangeStatus" NOT NULL,
-    "description" TEXT,
     "createdAt" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMPTZ(6) NOT NULL,
 
@@ -81,7 +75,7 @@ CREATE TABLE "point_histories" (
 CREATE TABLE "purchases" (
     "id" TEXT NOT NULL,
     "buyerId" TEXT NOT NULL,
-    "shopId" TEXT NOT NULL,
+    "cardId" TEXT NOT NULL,
     "createdAt" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMPTZ(6) NOT NULL,
 
@@ -94,11 +88,6 @@ CREATE TABLE "shops" (
     "sellerId" TEXT NOT NULL,
     "cardId" TEXT NOT NULL,
     "price" INTEGER NOT NULL,
-    "initialQuantity" INTEGER NOT NULL DEFAULT 0,
-    "remainingQuantity" INTEGER NOT NULL DEFAULT 0,
-    "exchangeGrade" "CardGrade" NOT NULL DEFAULT 'common',
-    "exchangeGenre" "CardGenre" NOT NULL DEFAULT 'travel',
-    "exchangeDescription" TEXT,
     "createdAt" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMPTZ(6) NOT NULL,
 
@@ -111,15 +100,11 @@ CREATE TABLE "users" (
     "email" VARCHAR(255) NOT NULL,
     "password" VARCHAR(255) NOT NULL,
     "nickname" VARCHAR(50) NOT NULL,
-    "refreshToken" TEXT,
     "createdAt" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMPTZ(6) NOT NULL,
 
     CONSTRAINT "users_pkey" PRIMARY KEY ("id")
 );
-
--- CreateIndex
-CREATE INDEX "cards_ownerId_idx" ON "cards"("ownerId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "points_userId_key" ON "points"("userId");
@@ -130,17 +115,14 @@ CREATE UNIQUE INDEX "shops_cardId_key" ON "shops"("cardId");
 -- CreateIndex
 CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
 
--- CreateIndex
-CREATE UNIQUE INDEX "users_nickname_key" ON "users"("nickname");
-
 -- AddForeignKey
-ALTER TABLE "cards" ADD CONSTRAINT "cards_ownerId_fkey" FOREIGN KEY ("ownerId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "exchanges" ADD CONSTRAINT "exchanges_offeredCardId_fkey" FOREIGN KEY ("offeredCardId") REFERENCES "cards"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "cards" ADD CONSTRAINT "cards_ownerId_fkey" FOREIGN KEY ("ownerId") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "exchanges" ADD CONSTRAINT "exchanges_requesterId_fkey" FOREIGN KEY ("requesterId") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "exchanges" ADD CONSTRAINT "exchanges_offeredCardId_fkey" FOREIGN KEY ("offeredCardId") REFERENCES "cards"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "exchanges" ADD CONSTRAINT "exchanges_targetCardId_fkey" FOREIGN KEY ("targetCardId") REFERENCES "cards"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -158,10 +140,10 @@ ALTER TABLE "point_histories" ADD CONSTRAINT "point_histories_userId_fkey" FOREI
 ALTER TABLE "purchases" ADD CONSTRAINT "purchases_buyerId_fkey" FOREIGN KEY ("buyerId") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "purchases" ADD CONSTRAINT "purchases_shopId_fkey" FOREIGN KEY ("shopId") REFERENCES "shops"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "shops" ADD CONSTRAINT "shops_cardId_fkey" FOREIGN KEY ("cardId") REFERENCES "cards"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "purchases" ADD CONSTRAINT "purchases_cardId_fkey" FOREIGN KEY ("cardId") REFERENCES "cards"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "shops" ADD CONSTRAINT "shops_sellerId_fkey" FOREIGN KEY ("sellerId") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "shops" ADD CONSTRAINT "shops_cardId_fkey" FOREIGN KEY ("cardId") REFERENCES "cards"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

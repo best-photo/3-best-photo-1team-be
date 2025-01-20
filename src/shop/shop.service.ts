@@ -68,10 +68,22 @@ export class ShopService {
       include: {
         card: {
           include: {
-            owner: true, // 카드 소유자 정보
+            owner: true,
+            // 내가 제시한 교환 목록
+            offeredExchanges: {
+              include: {
+                offeredCard: true, // 내가 제시한 카드 정보
+              },
+            },
+            // 다른 사람이 제시한 교환 목록
+            targetExchanges: {
+              include: {
+                offeredCard: true, // 상대방이 제시한 카드 정보
+              },
+            },
           },
         },
-        seller: true, // 판매자 정보
+        seller: true,
       },
     });
 
@@ -100,6 +112,34 @@ export class ShopService {
           genre: shop.exchangeGenre,
           description: shop.exchangeDescription,
         },
+      },
+      exchanges: {
+        // 내가 제시한 교환 목록
+        offeredExchanges:
+          shop.card?.offeredExchanges.map((exchange) => ({
+            card: {
+              name: exchange.offeredCard.name,
+              imageUrl: exchange.offeredCard.imageUrl,
+              grade: exchange.offeredCard.grade,
+              genre: exchange.offeredCard.genre,
+              description: exchange.offeredCard.description,
+            },
+            description: exchange.description,
+            status: exchange.status,
+          })) ?? [],
+        // 다른 사람이 제시한 교환 목록
+        targetExchanges:
+          shop.card?.targetExchanges.map((exchange) => ({
+            card: {
+              name: exchange.offeredCard.name,
+              imageUrl: exchange.offeredCard.imageUrl,
+              grade: exchange.offeredCard.grade,
+              genre: exchange.offeredCard.genre,
+              description: exchange.offeredCard.description,
+            },
+            description: exchange.description,
+            status: exchange.status,
+          })) ?? [],
       },
     };
   }
@@ -395,6 +435,11 @@ export class ShopService {
   // 판매 포토 카드 구매
   async purchaseCard(userId: string, purchaseCardDto: PurchaseCardDto) {
     const { shopId, quantity } = purchaseCardDto;
+    console.log('shopId : ', shopId);
+
+    if (!shopId) {
+      throw new BadRequestException('shopId가 유효하지 않습니다.');
+    }
 
     // 트랜잭션 시작
     return await this.prisma.$transaction(async (prisma) => {

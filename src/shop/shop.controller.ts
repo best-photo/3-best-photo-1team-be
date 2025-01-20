@@ -201,6 +201,8 @@ export class ShopController {
     @GetUser() user,
   ) {
     const { userId } = user;
+    console.log('User ID:', userId);
+    console.log('Purchase DTO:', purchaseCardDto);
     try {
       return this.shopService.purchaseCard(userId, purchaseCardDto);
     } catch (error) {
