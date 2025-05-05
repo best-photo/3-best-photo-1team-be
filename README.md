@@ -2,6 +2,7 @@
 
 - [팀 문서](https://www.notion.so/chobodev/16924202780c809a9cdee8926986f244?v=16924202780c811580b1000c2847f948)
 - [Swagger](https://api.ooyoo.dev/api)
+- 시연영상 및 발표자료(Google Drive) : https://drive.google.com/drive/folders/18qtKHCPeYLBP6-7kKVRYCRrBeVxNxTTM
 
 ## 팀원 구성
 | 이름 | 역할 | Github |
